@@ -395,11 +395,13 @@ a_1	equr	a1
 a_2	equr	a2
 a_3	equr	a3
 
+distspeed 	equ	5
+disthigh	equ	20
+;copy (disthigh-distspeed)/2 registers
+	movem.l	disttable+distspeed*2,d0-d7	;copy disttab
+	movem.l	d0-d7,disttable
 
-	movem.l	disttable+16,d0-d7/a0-a3	;copy disttab
-	movem.l	d0-d7/a0-a3,disttable
-
-	dcb	$4e71,3
+	dcb	$4e71,3+4*4
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -412,9 +414,9 @@ a_3	equr	a3
 	move.l	d3,$ffff824e.w	;mdist
 
 
-	lea	disttable+48,a_3	;position to write new
+	lea	disttable+disthigh*2-distspeed*2,a_3	;position to write new
 	move.l	distwaveptr,a_0		;position in the actual wave
-	moveq	#7,d_0			;read 8
+	moveq	#distspeed-1,d_0	;read 8
 	moveq	#0,d_3
 	move.w	distcalc,d_2
 
@@ -479,9 +481,9 @@ _notnextwavetab:
 	move.l	a_0,distwaveptr	;~20
 	move.w	d_3,distcalc	;~16
 
-	lea	disttable+8,a_3	;~12 scroll begins 26 lines before end of screen
+	lea	disttable+4,a_3 ;~12 scroll begins 18 lines before end of screen
 	lea	shift,a_0	;~12 pointer to the shifts
-	move.w	#-(17*8),count	;~20 scroll has 16 lines
+	move.w	#-(18*8),count	;~20 scroll has 18 lines
 distcalcloop:	;(~12)
 
 	move.w	(a_3)+,d_1	;~8
@@ -528,9 +530,47 @@ indistcalcloop:
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
 	addq.w	#8,count	;~4
 	bne	distcalcloop	;~12
+
+	dcb	$4e71,41-20
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+	dcb	$4e71,41
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#0,$ffff820a.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,41-4
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+
+
 	bra	copydistscroll
-
-
 
 	dcb	$4e71,41-9
 
@@ -611,7 +651,7 @@ _nottextend:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	clr.b	d_1		;~4 C
 	clr.b	d_2		;~4 K
-	lea	font+(26*8),a_1	;~8
+	lea	font+(18*8),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
 ;	lea	(a_1),a_2	;C
@@ -836,7 +876,7 @@ copydistscroll:
 	move.l	screenadr,a6	;put it there
 	add.l	#6*160,a6	;for hwscroll
 	lea	buffer,a4
-	moveq	#17,d0		;scrollhigh:16
+	moveq	#18,d0		;scrollhigh:18
 ;	not	$ffff8240.w
 scrollcpy:
 	move.w	shift-buffer(a4),d1
@@ -847,6 +887,7 @@ scrollcpy:
 	move.w	bufcnt-buffer(a4),d1
 	lea	cpyjsr,a0
 	move.l	(a0,d1),a0
+;	move.l	a5,a6
 	jsr	(a0)		;(a5)+ -> (a6)
 	lea	230(a6),a6
 	lea	linebuffend-linebuffbegin(a4),a4
@@ -1501,12 +1542,18 @@ font	equ	*-32*8
 	even
 wavetab:
 ;	dc.l	wordschief
-	dc.l	byteschief
+;	dc.l	byteschief
 ;	dc.l	nix
 ;	dc.l	dreieck
 ;	dc.l	dreieck
 ;	dc.l	sinus
+	dc.l	sinschief
 	dc.l	0	;end
+sinschief;
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1
+	dc.w  0,0,1,0,0,1,0,0,2,0,0,1,0,0,1,0,0,2,0,0,2,0,0,2,0,0,2,0,0,1,0,0,1
+	dc.w 0,0,2,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128
+
 wordschief:
 	dc.w	2,2,2,2,2,2,2,2
 	dc.w	2,2,2,2,2,2,2,2

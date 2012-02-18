@@ -165,6 +165,7 @@ initdist:
 	move.l	a0,a1
 	lea	buffer-linebuffbegin(a1),a1
 	move.l	a1,bufptr-linebuffbegin(a0)
+	move.l	a1,bufptrinit-linebuffbegin(a0)
 	clr.w	bufcnt-linebuffbegin(a0)
 	clr.w	shift-linebuffbegin(a0)
 	lea	linebuffend-linebuffbegin(a0),a0
@@ -398,10 +399,194 @@ overscanloop:
 	;**********************************************************
 	;	Distorted scroller by Gunstick
 
+
+	;***** Calc next screenadress ****
+	move.l	screenadr,screenadr	;wow!
+	
+	;***** Do the 8 following distorter entrys **** 
+	;; first copy the wave to the megadistadjusttable
+d_0	equr	d0
+d_1	equr	d1
+d_2	equr	d2
+d_3	equr	d3
+a_0	equr	a0
+a_1	equr	a1
+a_2	equr	a2
+a_3	equr	a3
+
+	move.l	distwaveptr,a_0		;position in the actual wave
+	move.l	megadistadjust,a_3	;position in the adjust table
+	add	#274,a_3	;new: behind
+	moveq	#7,d_0			;read 8
+distwaveread:
+	move.w	(a_0)+,d_1
+	cmp.w	#$8000,d_1
+	bne.s	notnextwavetab
+	move.l	wavetabptr,a_1	;next wave to be read
+	move.l	(a_1)+,a_0
+	move.w	(a_0)+,d_1
+	move.l	a_1,wavetabptr
+_notnextwavetab:
+	move.w	d_1,-274-8(a_3)	;before
+	move.w	d_1,(a_3)+	;behind
+	dbf	d_0,distwaveread
+	move.l	a_0,distwaveptr
+
+	;=-| read the new distortions and shift the buffers
+	; letters of font must be 256 bytes !!!!!!!!
+	lea	-32(a_3),a_3	;scroll begins 32 lines before end of screen
+	lea	shift,a_0	;pointer to the shifts
+	move.w	#26,count	;scroll has 26 lines
+distcalcloop:
+	move.w	(a_3)+,d_1
+	move.w	(a_0),d_2		;read shift
+	add.w	d_1,d_2
+	blo.s	vorwaerts
+	sub.w	#16,d_2
+	bhs.s	rueckwaerts
+	add.w	#16,d_2			;plenty of time here
+	move.w	d_2,(a_0)		;write back new shift
+indistcalcloop:
+	subq.w	#1,count
+	bne.s	distcalcloop
+	bra.s	copydistscroll
+notnextwavetab:			;time adjust
+	dcb	$4e71,1	
+	bra.s	_notnextwavetab
+
+
+	;-> advance this line by one word
+vorwaerts:
+	
+	move.w	d_2,(a_0)		;write back new shift
+	move.l	textptr-shift(a_0),a_1
+	;movep : 5 nops weniger
+	;actual = if any bit of the letter appears in one buffer
+	;		textptr
+	;		|
+	;UNLIMITED MATRICKS	a bit of C appears somewhere
+	;now we have to write a bit of K and C
+	movep.w	0(a_1),d_1	;previous letter : C
+	movep.w	1(a_1),d_2	;act letter	 : K
+	lea	1(a_1),a_1
+	move.l	a_1,textptr-shift(a_0)	;textptr points to K
+	clr.b	d_1	;C
+	clr.b	d_2	;K
+	lea	font,a_1
+	movem.w	(a_1,d_2),d_0/d_1/d_2/d_3	;K
+	lea	(a_1,d_1),a_1	;C
+	;write first buffer
+	move.l	bufptr-shift(a_0),a_2
+	movem.w	d_0/d_1/d_2/d_3,(a_2)
+	;prepare shifter
+	swap	d_0
+	swap	d_1
+	swap	d_2
+	swap	d_3
+	move.w	(a_1)+,d_3		;C
+	move.w	(a_1)+,d_0
+	move.w	(a_1)+,d_1
+	move.w	(a_1)+,d_2
+	;uff one line of the 2 letters is in d0-d3
+	;d0	bbbbbbbb|AAAAAAAA
+	;d1	cccccccc|BBBBBBBB
+	;d2	dddddddd|CCCCCCCC
+	;d3	aaaaaaaa|DDDDDDDD
+	rept	15
+	swap	d_3	;~4
+ 	addx.w	d3,d3	;~4	;got a bit for A
+	swap	d_3	;~4
+ 	addx.l	d0,d0	;~8	;a in and b out
+ 	addx.l	d1,d1	;~8	;b in and c out
+ 	addx.l	d2,d2	;~8	;c in and d out
+ 	addx.w	d3,d3	;~4	;d in
+	movem.w	d_0/d_1/d_2/d_3,(a_2)	;~28
+	lea	26*8(a_2),a_2	;~8
+	endr
+	cmp.w	#25,bufcnt-shift(a_0)
+	bls.s	vorbufok
+	move.w	#-1,bufcnt-shift(a_0)	;screenwidth = 26 words
+	sub.l	#25*8,bufptr-shift(a_0)
+	bra.s	indistcalcloop
+vorbufok:
+	addq.w	#1,bufcnt-shift(a_0)
+	bra.s	indistcalcloop
+
+
+	;-< back this line by one word
+rueckbufok:
+	dcb	$4e71,1	
+	bra.s	_rueckbufok
+rueckwaerts:
+	move.w	d_2,(a_0)		;write back new shift
+	subq.w	#1,bufcnt-shift(a_0)
+	bhs.s	rueckbufok
+	move.w	#25,bufcnt-shift(a_0)	;screenwidth = 26 words
+	add.l	#25*8,bufptr-shift(a_0)
+_rueckbufok:
+	move.l	textptr-shift(a_0),a_1
+	;movep : 5 nops weniger
+	;actual = if any bit of the letter appears in one buffer
+	;		             textptr
+	;  |			     |
+	;YEAH THIS IS UNLIMITED MATRICKS	a bit of C appears somewhere
+	;a bit of A appears somewhere
+	;now we have to write a bit of E and A 
+	movep.w	-27(a_1),d_1	;previous letter : E
+	movep.w	-26(a_1),d_2	;act letter	 : A
+	lea	-1(a_1),a_1
+	move.l	a_1,textptr-shift(a_0)	;textptr points to I
+	clr.b	d_1	;E
+	clr.b	d_2	;A
+	lea	font,a_1
+	movem.w	(a_1,d_2),d_0/d_1/d_2/d_3	;A
+	lea	(a_1,d_1),a_1	;E
+	;write first buffer
+	move.l	bufptr-shift(a_0),a_2
+	movem.w	d_0/d_1/d_2/d_3,(a_2)
+	;prepare shifter
+	swap	d_0
+	swap	d_1
+	swap	d_2
+	swap	d_3
+	move.w	(a_1)+,d_3		;E
+	move.w	(a_1)+,d_0
+	move.w	(a_1)+,d_1
+	move.w	(a_1)+,d_2
+	;uff one line of the 2 letters is in d0-d3
+	;	   A	    E
+	;d0	bbbbbbbb|AAAAAAAA
+	;d1	cccccccc|BBBBBBBB
+	;d2	dddddddd|CCCCCCCC
+	;d3	aaaaaaaa|DDDDDDDD
+	rept	15
+	swap	d_3	;~4
+ 	addx.w	d3,d3	;~4	;got a bit for A
+	swap	d_3	;~4
+ 	addx.l	d0,d0	;~8	;a in and b out
+ 	addx.l	d1,d1	;~8	;b in and c out
+ 	addx.l	d2,d2	;~8	;c in and d out
+ 	addx.w	d3,d3	;~4	;d in
+	movem.w	d_0/d_1/d_2/d_3,(a_2)	;~28
+	lea	26*8(a_2),a_2	;~8
+	endr
+	bra.s	indistcalcloop
+
+
+
+
+notnextwavetab:			;time adjust
+	dcb	$4e71,1	
+	bra.s	_notnextwavetab
+
+
+
+copydistscroll:
+	;**** Copy all the buffers to the screen ****
 	move.l	screenadr,a6	;put it there
 	add.l	#6*160,a6	;for hwscroll
 	lea	buffer,a5
-	moveq	#31,d0
+	moveq	#25,d0		;scrollhigh:26
 	not	$ffff8240.w
 scrollcpy:
 	move.w	bufcnt-buffer(a5),d1
@@ -415,7 +600,7 @@ scrollcpy:
 
 
 	lea	bufcnt,a5
-	moveq	#31,d0
+	moveq	#25,d0		;scrollhigh:26
 wordscroll:
 	add.w	#4,(a5)
 	cmp.w	#4*26,(a5)
@@ -1056,8 +1241,12 @@ cpy25:	;9,9,9,9,9,5+2
 
 	;**********************************************************
 	;	Distorted scroller by Gunstick
-testcount:
-	dc.w	10
+count:
+	dc.l	0	;for some dbf without register
+	
+	;Panic buffer for scrolltext
+	dc.b	01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
+	dc.b	01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 scrolltext:
 	dc.b	01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20
 	dc.b	21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40
@@ -1068,9 +1257,9 @@ font:
 	even
 linebuffbegin:
 textptr:
-	dc.l	0	;next letter to be added (forward)
+	dc.l	0	;letter not completly copied into buffer (forward)
 bufptr:
-	dc.l	0	;pos where graphic is added
+	dc.l	0	;pos where graphic is added in preshift 0
 bufcnt:
 	dc.w	0	;which one of the 26 routs to be used to copy
 shift:
@@ -1078,7 +1267,7 @@ shift:
 buffer:
 	ds.l	2*26*16	;16 shifts of the 1st line of the scrolling
 linebuffend:
-	rept	31
+	rept	25	;26 lines scroll
 	dc.l	0
 	dc.l	0
 	dc.w	0

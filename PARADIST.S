@@ -99,8 +99,6 @@ alles:
 	bsr.s	waitvbl
 	move.b	#2,$ffff820a.w
 	bsr.s	waitvbl
-	move.b	#0,$ffff820a.w
-	bsr.s	waitvbl
 	move.b	#2,$ffff820a.w
 	move.b	oldres,$ffff8260.w
 	lea	$ffff8201.w,a0
@@ -122,6 +120,9 @@ alles:
 	lea	$ffff8240.w,a1
 	movem.l (a0),d0-d7
 	movem.l d0-d7,(a1)
+
+	bsr.s	waitvbl
+	move.b	#0,$ffff820a.w
 
 	rts
 
@@ -159,74 +160,79 @@ screen2:
 	;**********************************************************
 	;	Distorted scroller by Gunstick
 	lea	linebuffbegin,a0
-	moveq	#31,d0
+	moveq	#25,d0	;26 lines are scrolled
 initdist:
 	move.l	#scrolltext,textptr-linebuffbegin(a0)
 	move.l	a0,a1
 	lea	buffer-linebuffbegin(a1),a1
 	move.l	a1,bufptr-linebuffbegin(a0)
-	move.l	a1,bufptrinit-linebuffbegin(a0)
 	clr.w	bufcnt-linebuffbegin(a0)
 	clr.w	shift-linebuffbegin(a0)
 	lea	linebuffend-linebuffbegin(a0),a0
 	dbf	d0,initdist
+	lea	wavetab,a0
+	move.l	a0,wavetabptr
+	move.l	(a0),a0
+	move.l	a0,distwaveptr
+	move.l	#megadistadjusttable,megadistadjust
+
 
 	lea	font,a0
 	lea	buffer,a1
-	moveq	#31,d0		;init all unshiftet linebuffers
+	moveq	#25,d0		;init all unshiftet linebuffers
 testinitbuff:
 	move.l	(a0),(a1)+
-	move.l	2(a0),(a1)+
-	move.l	26*8(a0),(a1)+
-	move.l	26*8+4(a0),(a1)+
-	move.l	26*8*2(a0),(a1)+
-	move.l	26*8*2+4(a0),(a1)+
-	move.l	26*8*3(a0),(a1)+
-	move.l	26*8*3+4(a0),(a1)+
-	move.l	26*8*4(a0),(a1)+
-	move.l	26*8*4+4(a0),(a1)+
-	move.l	26*8*5(a0),(a1)+
-	move.l	26*8*5+4(a0),(a1)+
-	move.l	26*8*6(a0),(a1)+
-	move.l	26*8*6+4(a0),(a1)+
-	move.l	26*8*7(a0),(a1)+
-	move.l	26*8*7+4(a0),(a1)+
-	move.l	26*8*8(a0),(a1)+
-	move.l	26*8*8+4(a0),(a1)+
-	move.l	26*8*9(a0),(a1)+
-	move.l	26*8*9+4(a0),(a1)+
-	move.l	26*8*10(a0),(a1)+
-	move.l	26*8*10+4(a0),(a1)+
-	move.l	26*8*11(a0),(a1)+
-	move.l	26*8*11+4(a0),(a1)+
-	move.l	26*8*12(a0),(a1)+
-	move.l	26*8*12+4(a0),(a1)+
-	move.l	26*8*13(a0),(a1)+
-	move.l	26*8*13+4(a0),(a1)+
-	move.l	26*8*14(a0),(a1)+
-	move.l	26*8*14+4(a0),(a1)+
-	move.l	26*8*15(a0),(a1)+
-	move.l	26*8*15+4(a0),(a1)+
-	move.l	26*8*16(a0),(a1)+
-	move.l	26*8*16+4(a0),(a1)+
-	move.l	26*8*17(a0),(a1)+
-	move.l	26*8*17+4(a0),(a1)+
-	move.l	26*8*18(a0),(a1)+
-	move.l	26*8*18+4(a0),(a1)+
-	move.l	26*8*19(a0),(a1)+
-	move.l	26*8*19+4(a0),(a1)+
-	move.l	26*8*20(a0),(a1)+
-	move.l	26*8*20+4(a0),(a1)+
-	move.l	26*8*21(a0),(a1)+
-	move.l	26*8*21+4(a0),(a1)+
-	move.l	26*8*22(a0),(a1)+
-	move.l	26*8*22+4(a0),(a1)+
-	move.l	26*8*23(a0),(a1)+
-	move.l	26*8*23+4(a0),(a1)+
-	move.l	26*8*24(a0),(a1)+
-	move.l	26*8*24+4(a0),(a1)+
-	move.l	26*8*25(a0),(a1)+
-	move.l	26*8*25+4(a0),(a1)+
+	move.l	4(a0),(a1)+
+	move.l	32*8(a0),(a1)+
+	move.l	32*8+4(a0),(a1)+
+	move.l	32*8*2(a0),(a1)+
+	move.l	32*8*2+4(a0),(a1)+
+	move.l	32*8*3(a0),(a1)+
+	move.l	32*8*3+4(a0),(a1)+
+	move.l	32*8*4(a0),(a1)+
+	move.l	32*8*4+4(a0),(a1)+
+	move.l	32*8*5(a0),(a1)+
+	move.l	32*8*5+4(a0),(a1)+
+	move.l	32*8*6(a0),(a1)+
+	move.l	32*8*6+4(a0),(a1)+
+	move.l	32*8*7(a0),(a1)+
+	move.l	32*8*7+4(a0),(a1)+
+	move.l	32*8*8(a0),(a1)+
+	move.l	32*8*8+4(a0),(a1)+
+	move.l	32*8*9(a0),(a1)+
+	move.l	32*8*9+4(a0),(a1)+
+	move.l	32*8*10(a0),(a1)+
+	move.l	32*8*10+4(a0),(a1)+
+	move.l	32*8*11(a0),(a1)+
+	move.l	32*8*11+4(a0),(a1)+
+	move.l	32*8*12(a0),(a1)+
+	move.l	32*8*12+4(a0),(a1)+
+	move.l	32*8*13(a0),(a1)+
+	move.l	32*8*13+4(a0),(a1)+
+	move.l	32*8*14(a0),(a1)+
+	move.l	32*8*14+4(a0),(a1)+
+	move.l	32*8*15(a0),(a1)+
+	move.l	32*8*15+4(a0),(a1)+
+	move.l	32*8*16(a0),(a1)+
+	move.l	32*8*16+4(a0),(a1)+
+	move.l	32*8*17(a0),(a1)+
+	move.l	32*8*17+4(a0),(a1)+
+	move.l	32*8*18(a0),(a1)+
+	move.l	32*8*18+4(a0),(a1)+
+	move.l	32*8*19(a0),(a1)+
+	move.l	32*8*19+4(a0),(a1)+
+	move.l	32*8*20(a0),(a1)+
+	move.l	32*8*20+4(a0),(a1)+
+	move.l	32*8*21(a0),(a1)+
+	move.l	32*8*21+4(a0),(a1)+
+	move.l	32*8*22(a0),(a1)+
+	move.l	32*8*22+4(a0),(a1)+
+	move.l	32*8*23(a0),(a1)+
+	move.l	32*8*23+4(a0),(a1)+
+	move.l	32*8*24(a0),(a1)+
+	move.l	32*8*24+4(a0),(a1)+
+	move.l	32*8*25(a0),(a1)+
+	move.l	32*8*25+4(a0),(a1)+
 	addq.l	#8,a0
 	lea	linebuffend-linebuffbegin-208(a1),a1
 	dbf	d0,testinitbuff
@@ -235,18 +241,12 @@ testinitbuff:
 
 	lea	screenadr,a3
 ;	move.b	lowbyte,3(a3)
-	add.l	#0,(a3)	;overscan begins 26 bytes earlier
 
-
-	
 	bsr	waitvbl		;lower border
 	move.w	#4000,d0
 firsttopwait:
 	dbf	d0,firsttopwait
 	;move.b	#0,$ffff820a.w
-	
-
-
 
 loop:
 ;ULM Hardware Scrolling PART 1
@@ -405,6 +405,8 @@ overscanloop:
 	
 	;***** Do the 8 following distorter entrys **** 
 	;; first copy the wave to the megadistadjusttable
+	
+;Registerdefs: take care of the order. Modify also the addx.l !!!!
 d_0	equr	d0
 d_1	equr	d1
 d_2	equr	d2
@@ -420,44 +422,56 @@ a_3	equr	a3
 	moveq	#7,d_0			;read 8
 distwaveread:
 	move.w	(a_0)+,d_1
-	cmp.w	#$8000,d_1
+	cmp.w	#128,d_1
 	bne.s	notnextwavetab
 	move.l	wavetabptr,a_1	;next wave to be read
+	bne.s	notendwavetab
+	lea	wavetab,a_1	;reset wavetabptr
+notendwavetab:
 	move.l	(a_1)+,a_0
 	move.w	(a_0)+,d_1
 	move.l	a_1,wavetabptr
 _notnextwavetab:
-	move.w	d_1,-274-8(a_3)	;before
+	move.w	d_1,(-274-8)*2(a_3)	;before
 	move.w	d_1,(a_3)+	;behind
 	dbf	d_0,distwaveread
 	move.l	a_0,distwaveptr
+;	add.w	#8*2,a_3
+	cmp.l	#megadistadjusttable+276*4,a_3
+	bmi.s	ok
+;	lea	(-274-8)*2(a_3),a_3
+ok:
+;	move.l	a_3,megadistadjust
 
 	;=-| read the new distortions and shift the buffers
 	; letters of font must be 256 bytes !!!!!!!!
-	lea	-32(a_3),a_3	;scroll begins 32 lines before end of screen
+	lea	-12*2(a_3),a_3	;scroll begins 32 lines before end of screen
 	lea	shift,a_0	;pointer to the shifts
-	move.w	#26,count	;scroll has 26 lines
+	move.w	#-(26*8),count	;scroll has 26 lines
 distcalcloop:
 	move.w	(a_3)+,d_1
 	move.w	(a_0),d_2		;read shift
 	add.w	d_1,d_2
-	blo.s	vorwaerts
+	bmi	rueckwaerts
 	sub.w	#16,d_2
-	bhs.s	rueckwaerts
+	bhs	vorwaerts
 	add.w	#16,d_2			;plenty of time here
 	move.w	d_2,(a_0)		;write back new shift
 indistcalcloop:
-	subq.w	#1,count
+	lea	linebuffend-linebuffbegin(a_0),a_0	;next line
+	addq.w	#8,count
 	bne.s	distcalcloop
-	bra.s	copydistscroll
+	bra	copydistscroll
 notnextwavetab:			;time adjust
 	dcb	$4e71,1	
 	bra.s	_notnextwavetab
 
+nottextend:
+	lea	1(a_1),a_1
+	bra.s	_nottextend
 
 	;-> advance this line by one word
 vorwaerts:
-	
 	move.w	d_2,(a_0)		;write back new shift
 	move.l	textptr-shift(a_0),a_1
 	;movep : 5 nops weniger
@@ -468,49 +482,72 @@ vorwaerts:
 	;now we have to write a bit of K and C
 	movep.w	0(a_1),d_1	;previous letter : C
 	movep.w	1(a_1),d_2	;act letter	 : K
-	lea	1(a_1),a_1
+	tst.b	d_1	;test letter after act : S
+	bne.s	nottextend
+	lea	scrolltext,a_1
+_nottextend:
 	move.l	a_1,textptr-shift(a_0)	;textptr points to K
 	clr.b	d_1	;C
 	clr.b	d_2	;K
-	lea	font,a_1
-	movem.w	(a_1,d_2),d_0/d_1/d_2/d_3	;K
-	lea	(a_1,d_1),a_1	;C
-	;write first buffer
-	move.l	bufptr-shift(a_0),a_2
-	movem.w	d_0/d_1/d_2/d_3,(a_2)
-	;prepare shifter
+	lea	font+(26*8),a_1
+	add.w	count,a_1
+	lea	(a_1,d_1),a_2	;C
+;	lea	(a_1),a_2	;C
+	movem.l	(a_1,d_2),d_1/d_3	;K
+;	movem.w	256(a_1),d_0/d_1/d_2/d_3	;K
+	;d0:xxxxxxxxxxxxxxxx
+	;d1:aaaaaaaabbbbbbbb
+	;d2:xxxxxxxxxxxxxxxx
+	;d3:ccccccccdddddddd
+	move.w	d_1,d_2
+	move.w	d_3,d_0
+	;d0:xxxxxxxxdddddddd
+	;d1:aaaaaaaabbbbbbbb
+	;d2:xxxxxxxxbbbbbbbb
+	;d3:ccccccccdddddddd
 	swap	d_0
-	swap	d_1
 	swap	d_2
-	swap	d_3
-	move.w	(a_1)+,d_3		;C
-	move.w	(a_1)+,d_0
-	move.w	(a_1)+,d_1
-	move.w	(a_1)+,d_2
+	;d0:ddddddddxxxxxxxxx
+	;d1:aaaaaaaabbbbbbbbb
+	;d2:bbbbbbbbxxxxxxxxx
+	;d3:ccccccccddddddddd
+	move.l	bufptr-shift(a_0),a_1
+	;prepare shifter
+	move.w	(a_2)+,d_0
+	move.w	(a_2)+,d_1
+	move.w	(a_2)+,d_2
+	move.w	(a_2)+,d_3		;C
 	;uff one line of the 2 letters is in d0-d3
-	;d0	bbbbbbbb|AAAAAAAA
-	;d1	cccccccc|BBBBBBBB
-	;d2	dddddddd|CCCCCCCC
-	;d3	aaaaaaaa|DDDDDDDD
+	;d0	dddddddd|AAAAAAAA
+	;d1	aaaaaaaa|BBBBBBBB
+	;d2	bbbbbbbb|CCCCCCCC
+	;d3	cccccccc|DDDDDDDD
+	;write first buffer
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
+	lea	26*8(a_1),a_1	;~8
+
 	rept	15
-	swap	d_3	;~4
- 	addx.w	d3,d3	;~4	;got a bit for A
-	swap	d_3	;~4
- 	addx.l	d0,d0	;~8	;a in and b out
- 	addx.l	d1,d1	;~8	;b in and c out
- 	addx.l	d2,d2	;~8	;c in and d out
- 	addx.w	d3,d3	;~4	;d in
-	movem.w	d_0/d_1/d_2/d_3,(a_2)	;~28
-	lea	26*8(a_2),a_2	;~8
+	move	#0,ccr
+	swap	d_1	;~4
+ 	addx.w	d1,d1	;~4	;a out
+	swap	d_1	;~4
+ 	addx.l	d0,d0	;~8	;a in and d out
+ 	addx.l	d3,d3	;~8	;d in and c out
+ 	addx.l	d2,d2	;~8	;c in and b out
+ 	addx.w	d1,d1	;~4	;b in
+	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
+	lea	26*8(a_1),a_1	;~8
 	endr
-	cmp.w	#25,bufcnt-shift(a_0)
-	bls.s	vorbufok
-	move.w	#-1,bufcnt-shift(a_0)	;screenwidth = 26 words
+asd:
+	cmp.w	#25*4,bufcnt-shift(a_0)
+	blo.s	vorbufok
+	move.w	#0,bufcnt-shift(a_0)	;screenwidth = 26 words
 	sub.l	#25*8,bufptr-shift(a_0)
-	bra.s	indistcalcloop
+	bra	indistcalcloop
 vorbufok:
-	addq.w	#1,bufcnt-shift(a_0)
-	bra.s	indistcalcloop
+	addq.w	#4,bufcnt-shift(a_0)
+	add.l	#8,bufptr-shift(a_0)
+	bra	indistcalcloop
 
 
 	;-< back this line by one word
@@ -518,10 +555,11 @@ rueckbufok:
 	dcb	$4e71,1	
 	bra.s	_rueckbufok
 rueckwaerts:
+	add.w	#16,d_2
 	move.w	d_2,(a_0)		;write back new shift
-	subq.w	#1,bufcnt-shift(a_0)
+	subq.w	#4,bufcnt-shift(a_0)
 	bhs.s	rueckbufok
-	move.w	#25,bufcnt-shift(a_0)	;screenwidth = 26 words
+	move.w	#25*4,bufcnt-shift(a_0)	;screenwidth = 26 words
 	add.l	#25*8,bufptr-shift(a_0)
 _rueckbufok:
 	move.l	textptr-shift(a_0),a_1
@@ -539,20 +577,20 @@ _rueckbufok:
 	clr.b	d_1	;E
 	clr.b	d_2	;A
 	lea	font,a_1
+	lea	(a_1,d_1),a_2	;E
 	movem.w	(a_1,d_2),d_0/d_1/d_2/d_3	;A
-	lea	(a_1,d_1),a_1	;E
 	;write first buffer
-	move.l	bufptr-shift(a_0),a_2
-	movem.w	d_0/d_1/d_2/d_3,(a_2)
+	move.l	bufptr-shift(a_0),a_1
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	;prepare shifter
 	swap	d_0
 	swap	d_1
 	swap	d_2
 	swap	d_3
-	move.w	(a_1)+,d_3		;E
-	move.w	(a_1)+,d_0
-	move.w	(a_1)+,d_1
-	move.w	(a_1)+,d_2
+	move.w	(a_2)+,d_3		;E
+	move.w	(a_2)+,d_0
+	move.w	(a_2)+,d_1
+	move.w	(a_2)+,d_2
 	;uff one line of the 2 letters is in d0-d3
 	;	   A	    E
 	;d0	bbbbbbbb|AAAAAAAA
@@ -567,17 +605,12 @@ _rueckbufok:
  	addx.l	d1,d1	;~8	;b in and c out
  	addx.l	d2,d2	;~8	;c in and d out
  	addx.w	d3,d3	;~4	;d in
-	movem.w	d_0/d_1/d_2/d_3,(a_2)	;~28
-	lea	26*8(a_2),a_2	;~8
+	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
+	lea	26*8(a_1),a_1	;~8
 	endr
-	bra.s	indistcalcloop
+	bra	indistcalcloop
 
 
-
-
-notnextwavetab:			;time adjust
-	dcb	$4e71,1	
-	bra.s	_notnextwavetab
 
 
 
@@ -585,30 +618,35 @@ copydistscroll:
 	;**** Copy all the buffers to the screen ****
 	move.l	screenadr,a6	;put it there
 	add.l	#6*160,a6	;for hwscroll
-	lea	buffer,a5
+	lea	buffer,a4
 	moveq	#25,d0		;scrollhigh:26
-	not	$ffff8240.w
+;	not	$ffff8240.w
 scrollcpy:
-	move.w	bufcnt-buffer(a5),d1
+	move.w	shift-buffer(a4),d1
+	mulu	#208,d1
+;	lea	208*15(a4),a5
+	lea	(a4,d1),a5
+;	move.w	#0,d1
+	move.w	bufcnt-buffer(a4),d1
 	lea	cpyjsr,a0
 	move.l	(a0,d1),a0
 	jsr	(a0)		;(a5)+ -> (a6)
 	lea	230(a6),a6
-	lea	linebuffend-linebuffbegin-208(a5),a5
+	lea	linebuffend-linebuffbegin(a4),a4
 	dbf	d0,scrollcpy
-	not	$ffff8240.w
+;	not	$ffff8240.w
 
 
-	lea	bufcnt,a5
-	moveq	#25,d0		;scrollhigh:26
-wordscroll:
-	add.w	#4,(a5)
-	cmp.w	#4*26,(a5)
-	bne.s	notend
-	clr.w	(a5)
-notend:
-	lea	linebuffend-linebuffbegin(a5),a5
-	dbf	d0,wordscroll
+;	lea	bufcnt,a5
+;	moveq	#25,d0		;scrollhigh:26
+;wordscroll:
+;	add.w	#4,(a5)
+;	cmp.w	#4*26,(a5)
+;	bne.s	notend
+;	clr.w	(a5)
+;notend:
+;	lea	linebuffend-linebuffbegin(a5),a5
+;	dbf	d0,wordscroll
 
 ;	lea	font,a0
 ;	move.l	screenadr,a1	;put it there
@@ -1241,19 +1279,66 @@ cpy25:	;9,9,9,9,9,5+2
 
 	;**********************************************************
 	;	Distorted scroller by Gunstick
+font	equ	*-32*8
+	incbin	"font.bin"
+	even
 count:
 	dc.l	0	;for some dbf without register
-	
-	;Panic buffer for scrolltext
+distwaveptr:
+	dc.l	0	;pointer in one distwave
+wavetabptr:
+	dc.l	0	;pointer to the next wave to be played
+megadistadjust:
+	dc.l	0	;pointer to the distorter adjust table
+	ds.w	1600	;panic for table
+megadistadjusttable:
+	dcb	3,274*2+100	;adjusttable for the two distorters
+	ds.w	1600	;panic for table
+wavetab:
+	dc.l	dreieck
+	dc.l	0	;end
+	;		!!!!!! negativ = normal scroll direction !!!!!!
+dreieck:
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,2
+	dc.w	3,3,3,3,3,3,3,3
+	dc.w	2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,2
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,128
+	dc.w	16,16,16,16,16,16,16,16
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	128	
+;Panic buffer for scrolltext
 	dc.b	01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 	dc.b	01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 scrolltext:
+	dc.b	87,87
 	dc.b	01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20
 	dc.b	21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40
+	dc.b	41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60
+	dc.b	61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80
+	dc.b	81,82,83,84,85,86,87
 	dc.b	0
-	even
-font:
-	incbin	"font.bin"
 	even
 linebuffbegin:
 textptr:

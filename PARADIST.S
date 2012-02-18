@@ -161,7 +161,7 @@ screen2:
 	lea	linebuffbegin,a0
 	moveq	#31,d0
 initdist:
-	move.l	scrolltext,textptr-linebuffbegin(a0)
+	move.l	#scrolltext,textptr-linebuffbegin(a0)
 	move.l	a0,a1
 	lea	buffer-linebuffbegin(a1),a1
 	move.l	a1,bufptr-linebuffbegin(a0)

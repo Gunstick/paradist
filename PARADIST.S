@@ -1,6 +1,6 @@
 overscan:equ 0
 
-; screen #2 by The Fate of ULM (c) 1989 and for all eternity...
+; Double Megadistorter by Gunstick   (c) ULM 1990
 
 x:
 	pea	start(pc)
@@ -46,7 +46,7 @@ start:
 	move.l	screenad2,d0
 	sub.l	#160*6,d0
 	move.l	d0,screenadr
-	addi.l	#8*5-64,screenadr
+;	addi.l	#8*5-64,screenadr
 
 	movea.l screenad2,a0
 	move.l	#9999,d0
@@ -156,18 +156,93 @@ screen2:
 	move	#$2700,sr
 	move.l	sp,stack
 ;	clr.b	lowbyte
+	;**********************************************************
+	;	Distorted scroller by Gunstick
+	lea	linebuffbegin,a0
+	moveq	#31,d0
+initdist:
+	move.l	scrolltext,textptr-linebuffbegin(a0)
+	move.l	a0,a1
+	lea	buffer-linebuffbegin(a1),a1
+	move.l	a1,bufptr-linebuffbegin(a0)
+	clr.w	bufcnt-linebuffbegin(a0)
+	clr.w	shift-linebuffbegin(a0)
+	lea	linebuffend-linebuffbegin(a0),a0
+	dbf	d0,initdist
+
+	lea	font,a0
+	lea	buffer,a1
+	moveq	#31,d0		;init all unshiftet linebuffers
+testinitbuff:
+	move.l	(a0),(a1)+
+	move.l	2(a0),(a1)+
+	move.l	26*8(a0),(a1)+
+	move.l	26*8+4(a0),(a1)+
+	move.l	26*8*2(a0),(a1)+
+	move.l	26*8*2+4(a0),(a1)+
+	move.l	26*8*3(a0),(a1)+
+	move.l	26*8*3+4(a0),(a1)+
+	move.l	26*8*4(a0),(a1)+
+	move.l	26*8*4+4(a0),(a1)+
+	move.l	26*8*5(a0),(a1)+
+	move.l	26*8*5+4(a0),(a1)+
+	move.l	26*8*6(a0),(a1)+
+	move.l	26*8*6+4(a0),(a1)+
+	move.l	26*8*7(a0),(a1)+
+	move.l	26*8*7+4(a0),(a1)+
+	move.l	26*8*8(a0),(a1)+
+	move.l	26*8*8+4(a0),(a1)+
+	move.l	26*8*9(a0),(a1)+
+	move.l	26*8*9+4(a0),(a1)+
+	move.l	26*8*10(a0),(a1)+
+	move.l	26*8*10+4(a0),(a1)+
+	move.l	26*8*11(a0),(a1)+
+	move.l	26*8*11+4(a0),(a1)+
+	move.l	26*8*12(a0),(a1)+
+	move.l	26*8*12+4(a0),(a1)+
+	move.l	26*8*13(a0),(a1)+
+	move.l	26*8*13+4(a0),(a1)+
+	move.l	26*8*14(a0),(a1)+
+	move.l	26*8*14+4(a0),(a1)+
+	move.l	26*8*15(a0),(a1)+
+	move.l	26*8*15+4(a0),(a1)+
+	move.l	26*8*16(a0),(a1)+
+	move.l	26*8*16+4(a0),(a1)+
+	move.l	26*8*17(a0),(a1)+
+	move.l	26*8*17+4(a0),(a1)+
+	move.l	26*8*18(a0),(a1)+
+	move.l	26*8*18+4(a0),(a1)+
+	move.l	26*8*19(a0),(a1)+
+	move.l	26*8*19+4(a0),(a1)+
+	move.l	26*8*20(a0),(a1)+
+	move.l	26*8*20+4(a0),(a1)+
+	move.l	26*8*21(a0),(a1)+
+	move.l	26*8*21+4(a0),(a1)+
+	move.l	26*8*22(a0),(a1)+
+	move.l	26*8*22+4(a0),(a1)+
+	move.l	26*8*23(a0),(a1)+
+	move.l	26*8*23+4(a0),(a1)+
+	move.l	26*8*24(a0),(a1)+
+	move.l	26*8*24+4(a0),(a1)+
+	move.l	26*8*25(a0),(a1)+
+	move.l	26*8*25+4(a0),(a1)+
+	addq.l	#8,a0
+	lea	linebuffend-linebuffbegin-208(a1),a1
+	dbf	d0,testinitbuff
+
+	;********************************************************
+
 	lea	screenadr,a3
-	move.b	lowbyte,3(a3)
-	move.w	#100,d2
-testlp:
-	bsr.s	waitvbl		;lower border
-	move.w	#1500,d0
+;	move.b	lowbyte,3(a3)
+	add.l	#0,(a3)	;overscan begins 26 bytes earlier
+
+
+	
+	bsr	waitvbl		;lower border
+	move.w	#4000,d0
 firsttopwait:
 	dbf	d0,firsttopwait
-	move.b	#0,$ffff820a.w
-	dcb	$4e71,100
-	move.b	#2,$ffff820a.w
-	dbf	d2,testlp
+	;move.b	#0,$ffff820a.w
 	
 
 
@@ -301,8 +376,8 @@ cont4:
 	move.b	#0,$ffff8260.w
 	movem.l d5-d7/a2-a3,12+$ffff8240.w
 	dcb	$4e71,72-3
-	move.w	#221-16,d0
-;	 rept 5
+;	move.w	#221-16,d0
+	move.w	#32,d0
 overscanloop:
 	nop
 	nop
@@ -317,48 +392,55 @@ overscanloop:
 	move.b	#0,$ffff8260.w
 	dcb	$4e71,84-3
 	dbra	d0,overscanloop
-;	 endr
 	nop
-
-
-
-
-
-
-
-
-	nop
-
-	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#0,$ffff820a.w
-	dcb	$4e71,8
-	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-	move.b	#0,$ffff8260.w
-	dcb	$4e71,9
-	move.b	#2,$ffff8260.w	;Open left border
-	move.b	#0,$ffff8260.w
-	move.b	#2,$ffff820a.w
-	dcb	$4e71,84-1
-
-
-	rept 43+16
-
-	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
-	dcb	$4e71,8
-	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-	move.b	#0,$ffff8260.w
-	dcb	$4e71,9
-	move.b	#2,$ffff8260.w	;Open left border
-	move.b	#0,$ffff8260.w
-
-	dcb	$4e71,84
-	nop
-	nop
-	nop
-	endr
 
 	endc
+	;**********************************************************
+	;	Distorted scroller by Gunstick
+
+	move.l	screenadr,a6	;put it there
+	add.l	#6*160,a6	;for hwscroll
+	lea	buffer,a5
+	moveq	#31,d0
+	not	$ffff8240.w
+scrollcpy:
+	move.w	bufcnt-buffer(a5),d1
+	lea	cpyjsr,a0
+	move.l	(a0,d1),a0
+	jsr	(a0)		;(a5)+ -> (a6)
+	lea	230(a6),a6
+	lea	linebuffend-linebuffbegin-208(a5),a5
+	dbf	d0,scrollcpy
+	not	$ffff8240.w
+
+
+	lea	bufcnt,a5
+	moveq	#31,d0
+wordscroll:
+	add.w	#4,(a5)
+	cmp.w	#4*26,(a5)
+	bne.s	notend
+	clr.w	(a5)
+notend:
+	lea	linebuffend-linebuffbegin(a5),a5
+	dbf	d0,wordscroll
+
+;	lea	font,a0
+;	move.l	screenadr,a1	;put it there
+;	add.l	#6*160+40,a1	;for hwscroll
+;	moveq	#26,d0		;init all unshiftet linebuffers
+;ttestinitbuff:
+;	move.l	(a0),(a1)+
+;	move.l	4(a0),(a1)+
+;	move.l	26*8(a0),(a1)+
+;	move.l	26*8+4(a0),(a1)+
+;	addq.l	#8,a0
+;	lea	230-16(a1),a1
+;	dbf	d0,ttestinitbuff
+
+
+	;**********************************************************
+
 
 	btst	#0,$fffffc00.w
 	beq	no_key
@@ -476,7 +558,538 @@ nexthextodez:
 	bne.s	nexthextodez
 	movem.l (sp)+,d1/a3
 	rts
+
+	;**********************************************************
+	;	Distorted scroller by Gunstick
+	;The 26 copyroutines
+cpyjsr:
+	dc.l	cpy00,cpy01,cpy02,cpy03,cpy04
+	dc.l	cpy05,cpy06,cpy07,cpy08,cpy09
+	dc.l	cpy10,cpy11,cpy12,cpy13,cpy14
+	dc.l	cpy15,cpy16,cpy17,cpy18,cpy19
+	dc.l	cpy20,cpy21,cpy22,cpy23,cpy24
+	dc.l	cpy25
+	;copy 208 bytes from (a5) to (a6)  (52 registers)
+	;6 movems : 9,9,9,9,9,7 regs	(6 scanlines)
+	;read/write: 24+8*n = 16*(1.5+n)    (max: 10.5)
+c0	equr	a1
+c1	equr	d1
+c2	equr	d2
+c3	equr	d3
+c4	equr	d4
+c5	equr	d5
+c6	equr	d6
+c7	equr	d7
+c8	equr	a0
+
+cpy00:	;7,9,9,9,9,9
+
+
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6
+	movem.l		c0/c1/c2/c3/c4/c5/c6,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*7(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*16(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*25(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*34(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*43(a6)
+	
+	rts
+
+cpy01:	;2+5,9,9,9,9,9
+	movem.l	(a5)+,c0/c1
+	movem.l	c0/c1,4*50(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4
+	movem.l		c0/c1/c2/c3/c4,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*5(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*14(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*23(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*32(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*41(a6)
+
+	rts
+
+cpy02:	;4+3,9,9,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3
+	movem.l	c0/c1/c2/c3,4*48(a6)
+	movem.l	(a5)+,c0/c1/c2
+	movem.l		c0/c1/c2,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*3(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*12(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*21(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*30(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*39(a6)
+
+	rts
+
+cpy03:	;6+1,9,9,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
+	movem.l	c0/c1/c2/c3/c4/c5,4*46(a6)
+	movem.l	(a5)+,c0
+	movem.l		c0,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*1(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*10(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*19(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*28(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*37(a6)
+
+	rts
+
+cpy04:	;8,8,9,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7,4*44(a6)
+	
+	
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*8(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*17(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*26(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*35(a6)
+
+	rts
+
+cpy05:	;9,1+6,9,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*42(a6)
+	movem.l	(a5)+,c0
+	movem.l	c0,4*51(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
+	movem.l		c0/c1/c2/c3/c4/c5,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*6(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*15(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*24(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*33(a6)
+
+	rts
+
+cpy06:	;9,3+4,9,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*40(a6)
+	movem.l	(a5)+,c0/c1/c2
+	movem.l	c0/c1/c2,4*49(a6)
+	movem.l	(a5)+,c0/c1/c2/c3
+	movem.l		c0/c1/c2/c3,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*4(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*13(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*22(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*31(a6)
+
+	rts
+
+cpy07:	;9,5+2,9,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*38(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4
+	movem.l	c0/c1/c2/c3/c4,4*47(a6)
+	movem.l	(a5)+,c0/c1
+	movem.l		c0/c1,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*2(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*11(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*20(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*29(a6)
+
+	rts
+
+cpy08:	;9,7,9,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*36(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6
+	movem.l	c0/c1/c2/c3/c4/c5/c6,4*45(a6)
+
+
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*9(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*18(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*27(a6)
+
+	rts
+
+cpy09:	;9,9,7,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*34(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*43(a6)
+
+
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6
+	movem.l		c0/c1/c2/c3/c4/c5/c6,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*7(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*16(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*25(a6)
+
+	rts
+
+cpy10:	;9,9,2+5,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*32(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*41(a6)
+	movem.l	(a5)+,c0/c1
+	movem.l	c0/c1,4*50(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4
+	movem.l		c0/c1/c2/c3/c4,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*5(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*14(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*23(a6)
+
+	rts
+
+cpy11:	;9,9,4+3,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*30(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*39(a6)
+	movem.l	(a5)+,c0/c1/c2/c3
+	movem.l	c0/c1/c2/c3,4*48(a6)
+	movem.l	(a5)+,c0/c1/c2
+	movem.l		c0/c1/c2,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*3(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*12(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*21(a6)
+
+	rts
+
+cpy12:	;9,9,6+1,9,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*28(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*37(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
+	movem.l	c0/c1/c2/c3/c4/c5,4*46(a6)
+	movem.l	(a5)+,c0
+	movem.l		c0,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*1(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*10(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*19(a6)
+
+	rts
+
+cpy13:	;9,9,8,8,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*26(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*35(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7,4*44(a6)
+
+
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*8(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*17(a6)
+
+	rts
+
+cpy14:	;9,9,9,1+6,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*24(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*33(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*42(a6)
+	movem.l	(a5)+,c0
+	movem.l	c0,4*51(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
+	movem.l		c0/c1/c2/c3/c4/c5,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*6(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*15(a6)
+
+	rts
+
+cpy15:	;9,9,9,3+4,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*22(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*31(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*40(a6)
+	movem.l	(a5)+,c0/c1/c2
+	movem.l	c0/c1/c2,4*49(a6)
+	movem.l	(a5)+,c0/c1/c2/c3
+	movem.l		c0/c1/c2/c3,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*4(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*13(a6)
+
+	rts
+
+cpy16:	;9,9,9,5+2,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*20(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*29(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*38(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4
+	movem.l	c0/c1/c2/c3/c4,4*47(a6)
+	movem.l	(a5)+,c0/c1
+	movem.l		c0/c1,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*2(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*11(a6)
+
+	rts
+
+cpy17:	;9,9,9,7,9,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*18(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*27(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*36(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6
+	movem.l	c0/c1/c2/c3/c4/c5/c6,4*45(a6)
+
+
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*9(a6)
+
+	rts
+
+cpy18:	;9,9,9,9,7,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*16(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*25(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*34(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*43(a6)
+
+
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6
+	movem.l		c0/c1/c2/c3/c4/c5/c6,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*7(a6)
+
+	rts
+
+cpy19:	;9,9,9,9,2+5,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*14(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*23(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*32(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*41(a6)
+	movem.l	(a5)+,c0/c1
+	movem.l	c0/c1,4*50(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4
+	movem.l		c0/c1/c2/c3/c4,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*5(a6)
+
+	rts
+
+cpy20:	;9,9,9,9,4+3,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*12(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*21(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*30(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*39(a6)
+	movem.l	(a5)+,c0/c1/c2/c3
+	movem.l	c0/c1/c2/c3,4*48(a6)
+	movem.l	(a5)+,c0/c1/c2
+	movem.l		c0/c1/c2,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*3(a6)
+
+	rts
+
+cpy21:	;9,9,9,9,6+1,9
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*10(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*19(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*28(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*37(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
+	movem.l	c0/c1/c2/c3/c4/c5,4*46(a6)
+	movem.l	(a5)+,c0
+	movem.l		c0,(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*1(a6)
+
+	rts
+
+cpy22:	;9,9,9,9,8,8
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*8(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*17(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*26(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*35(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7,4*44(a6)
+
+
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
+	movem.l		c0/c1/c2/c3/c4/c5/c6/c7,(a6)
+
+	rts
+
+cpy23:	;9,9,9,9,9,1+6
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*6(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*15(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*24(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*33(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*42(a6)
+	movem.l	(a5)+,c0
+	movem.l	c0,4*51(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
+	movem.l		c0/c1/c2/c3/c4/c5,(a6)
+
+	rts
+
+cpy24:	;9,9,9,9,9,3+4
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*4(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*13(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*22(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*31(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*40(a6)
+	movem.l	(a5)+,c0/c1/c2
+	movem.l	c0/c1/c2,4*49(a6)
+	movem.l	(a5)+,c0/c1/c2/c3
+	movem.l		c0/c1/c2/c3,(a6)
+
+	rts
+
+cpy25:	;9,9,9,9,9,5+2
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*2(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*11(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*20(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*29(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
+	movem.l	c0/c1/c2/c3/c4/c5/c6/c7/c8,4*38(a6)
+	movem.l	(a5)+,c0/c1/c2/c3/c4
+	movem.l	c0/c1/c2/c3/c4,4*47(a6)
+	movem.l	(a5)+,c0/c1
+	movem.l		c0/c1,(a6)
+
+	rts
+	;
+	;**********************************************************
+
 	section	data
+
+	;**********************************************************
+	;	Distorted scroller by Gunstick
+testcount:
+	dc.w	10
+scrolltext:
+	dc.b	01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20
+	dc.b	21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40
+	dc.b	0
+	even
+font:
+	incbin	"font.bin"
+	even
+linebuffbegin:
+textptr:
+	dc.l	0	;next letter to be added (forward)
+bufptr:
+	dc.l	0	;pos where graphic is added
+bufcnt:
+	dc.w	0	;which one of the 26 routs to be used to copy
+shift:
+	dc.w	0	;which preshift to copy
+buffer:
+	ds.l	2*26*16	;16 shifts of the 1st line of the scrolling
+linebuffend:
+	rept	31
+	dc.l	0
+	dc.l	0
+	dc.w	0
+	dc.w	0
+	ds.l	2*26*16
+	endr
+	;**********************************************************
+
+
+
+
 prt:
 	dc.b 27,"Y",32+20,32+1,"     000"
 str:	dc.b "0    ",0

@@ -174,7 +174,7 @@ initdist:
 	move.l	a0,wavetabptr
 	move.l	(a0),a0
 	move.l	a0,distwaveptr
-	move.l	#megadistadjusttable,megadistadjust
+	move.l	#disttable,disttableptr
 
 
 	lea	font,a0
@@ -364,11 +364,6 @@ cont4:
 ;HERE WE ARE SYNCHRON
 ;These lines are to be used if the screen uses left border
 
-	ifne overscan
-	dcb	$4e71,4
-	movem.l d2-d7/a2-a3,$ffff8240.w
-	endc
-	ifeq overscan
 	dcb	$4e71,3
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
@@ -376,35 +371,35 @@ cont4:
 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	movem.l d5-d7/a2-a3,12+$ffff8240.w
-	dcb	$4e71,72-3
-;	move.w	#221-16,d0
-	move.w	#32,d0
-overscanloop:
-	nop
-	nop
-	nop
+	;**********************************************************
+	;	Distorted scroller by Gunstick
+	;INITIALISATIONS
+	;***** Calc next screenadress ****
+	move.l	screenadr,screenadr	;-9  
+	dcb	$4e71,63
+;	move.w	#221-16,d7
+	move.w	#32,d7
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,8
+overscanloop:
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	dcb	$4e71,9
-	move.b	#2,$ffff8260.w	;Open left border
+	movem.l	d0/d1/d2,$ffff8240.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
-	dcb	$4e71,84-3
-	dbra	d0,overscanloop
-	nop
+	move.l	d3,$ffff824e.w	;mdist
+	dcb	$4e71,83
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,5
+	dbra	d7,overscanloop
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
 
-	endc
-	;**********************************************************
-	;	Distorted scroller by Gunstick
 
-
-	;***** Calc next screenadress ****
-	move.l	screenadr,screenadr	;wow!
-	
 	;***** Do the 8 following distorter entrys **** 
-	;; first copy the wave to the megadistadjusttable
+	;; first copy the wave to the disttable
 	
 ;Registerdefs: take care of the order. Modify also the addx.l !!!!
 d_0	equr	d0
@@ -415,11 +410,14 @@ a_0	equr	a0
 a_1	equr	a1
 a_2	equr	a2
 a_3	equr	a3
-
+asd
+	movem.l	disttable+16,d0-d7/a0-a3	;copy disttab
+	movem.l	d0-d7/a0-a3,disttable
+	lea	disttable+48,a_3	;position to write new
 	move.l	distwaveptr,a_0		;position in the actual wave
-	move.l	megadistadjust,a_3	;position in the adjust table
-	add	#274,a_3	;new: behind
 	moveq	#7,d_0			;read 8
+	moveq	#0,d_3
+	move.w	distcalc,d_2
 distwaveread:
 	move.w	(a_0)+,d_1
 	cmp.w	#128,d_1
@@ -432,20 +430,24 @@ notendwavetab:
 	move.w	(a_0)+,d_1
 	move.l	a_1,wavetabptr
 _notnextwavetab:
-	move.w	d_1,(-274-8)*2(a_3)	;before
-	move.w	d_1,(a_3)+	;behind
+	add.w	d_1,d_3
+	add.w	d_1,d_2
+	sub.w	16(a_3),d_2
+	move.w	d_1,16(a_3)
+	move.w	d_2,(a_3)+	;write new curve
+;	move.w	d_1,d_3
+;	sub.w	16(a_3),d_1	;sub old speed
+;	move.w	d_3,16(a_3)	;save new speed
+;	add.w	d_1,d_2		;calc new pos
+;	add	d_1,distcalc	;sum up for the next time
+
+
 	dbf	d_0,distwaveread
 	move.l	a_0,distwaveptr
-;	add.w	#8*2,a_3
-	cmp.l	#megadistadjusttable+276*4,a_3
-	bmi.s	ok
-;	lea	(-274-8)*2(a_3),a_3
-ok:
-;	move.l	a_3,megadistadjust
-
+	move.w	d_3,distcalc
 	;=-| read the new distortions and shift the buffers
 	; letters of font must be 256 bytes !!!!!!!!
-	lea	-12*2(a_3),a_3	;scroll begins 32 lines before end of screen
+	lea	disttable+8,a_3	;scroll begins 26 lines before end of screen
 	lea	shift,a_0	;pointer to the shifts
 	move.w	#-(26*8),count	;scroll has 26 lines
 distcalcloop:
@@ -538,7 +540,7 @@ _nottextend:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
 	lea	26*8(a_1),a_1	;~8
 	endr
-asd:
+
 	cmp.w	#25*4,bufcnt-shift(a_0)
 	blo.s	vorbufok
 	move.w	#0,bufcnt-shift(a_0)	;screenwidth = 26 words
@@ -552,7 +554,8 @@ vorbufok:
 
 	;-< back this line by one word
 rueckbufok:
-	dcb	$4e71,1	
+;	subq.w	#4,bufcnt-shift(a_0)
+	sub.l	#8,bufptr-shift(a_0)
 	bra.s	_rueckbufok
 rueckwaerts:
 	add.w	#16,d_2
@@ -577,34 +580,54 @@ _rueckbufok:
 	clr.b	d_1	;E
 	clr.b	d_2	;A
 	lea	font,a_1
+
+	lea	font+(26*8),a_1
+	add.w	count,a_1
 	lea	(a_1,d_1),a_2	;E
-	movem.w	(a_1,d_2),d_0/d_1/d_2/d_3	;A
-	;write first buffer
+	movem.l	(a_1,d_2),d_1/d_3	;A
+	;d0:xxxxxxxxxxxxxxxx
+	;d1:aaaaaaaabbbbbbbb
+	;d2:xxxxxxxxxxxxxxxx
+	;d3:ccccccccdddddddd
 	move.l	bufptr-shift(a_0),a_1
-	movem.w	d_0/d_1/d_2/d_3,(a_1)
-	;prepare shifter
+	move.w	d_1,d_2
+	move.w	d_3,d_0
+	;d0:xxxxxxxxdddddddd
+	;d1:aaaaaaaabbbbbbbb
+	;d2:xxxxxxxxbbbbbbbb
+	;d3:ccccccccdddddddd
 	swap	d_0
-	swap	d_1
 	swap	d_2
-	swap	d_3
-	move.w	(a_2)+,d_3		;E
+	;d0:ddddddddxxxxxxxxx
+	;d1:aaaaaaaabbbbbbbbb
+	;d2:bbbbbbbbxxxxxxxxx
+	;d3:ccccccccddddddddd
+	move.l	bufptr-shift(a_0),a_1
+	;prepare shifter
 	move.w	(a_2)+,d_0
 	move.w	(a_2)+,d_1
 	move.w	(a_2)+,d_2
+	move.w	(a_2)+,d_3		;E
+
 	;uff one line of the 2 letters is in d0-d3
 	;	   A	    E
-	;d0	bbbbbbbb|AAAAAAAA
-	;d1	cccccccc|BBBBBBBB
-	;d2	dddddddd|CCCCCCCC
-	;d3	aaaaaaaa|DDDDDDDD
+	;d0	dddddddd|AAAAAAAA
+	;d1	aaaaaaaa|BBBBBBBB
+	;d2	bbbbbbbb|CCCCCCCC
+	;d3	cccccccc|DDDDDDDD
+	;write first buffer
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
+	lea	26*8(a_1),a_1	;~8
+
 	rept	15
-	swap	d_3	;~4
- 	addx.w	d3,d3	;~4	;got a bit for A
-	swap	d_3	;~4
- 	addx.l	d0,d0	;~8	;a in and b out
- 	addx.l	d1,d1	;~8	;b in and c out
- 	addx.l	d2,d2	;~8	;c in and d out
- 	addx.w	d3,d3	;~4	;d in
+	move	#0,ccr
+	swap	d_1	;~4
+ 	addx.w	d1,d1	;~4	;a out
+	swap	d_1	;~4
+ 	addx.l	d0,d0	;~8	;a in and d out
+ 	addx.l	d3,d3	;~8	;d in and c out
+ 	addx.l	d2,d2	;~8	;c in and b out
+ 	addx.w	d1,d1	;~4	;b in
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
 	lea	26*8(a_1),a_1	;~8
 	endr
@@ -630,7 +653,7 @@ scrollcpy:
 	move.w	bufcnt-buffer(a4),d1
 	lea	cpyjsr,a0
 	move.l	(a0,d1),a0
-	jsr	(a0)		;(a5)+ -> (a6)
+;	jsr	(a0)		;(a5)+ -> (a6)
 	lea	230(a6),a6
 	lea	linebuffend-linebuffbegin(a4),a4
 	dbf	d0,scrollcpy
@@ -1284,43 +1307,77 @@ font	equ	*-32*8
 	even
 count:
 	dc.l	0	;for some dbf without register
+distcalc:
+	dc.w	0
 distwaveptr:
 	dc.l	0	;pointer in one distwave
 wavetabptr:
 	dc.l	0	;pointer to the next wave to be played
-megadistadjust:
+disttableptr:
 	dc.l	0	;pointer to the distorter adjust table
 	ds.w	1600	;panic for table
-megadistadjusttable:
-	dcb	3,274*2+100	;adjusttable for the two distorters
+disttable:
+	ds.w	26*2+100	;adjusttable for the two distorters
 	ds.w	1600	;panic for table
 wavetab:
-	dc.l	dreieck
+;	dc.l	dreieck
+	dc.l	sinus
 	dc.l	0	;end
-	;		!!!!!! negativ = normal scroll direction !!!!!!
 dreieck:
+	dc.w	1,0,1,0,1,0,1,0
+	dc.w	1,0,1,0,1,0,1,0
+	dc.w	1,0,1,0,1,0,1,0
+	dc.w	1,0,1,0,1,0,1,0
 	dc.w	1,1,1,1,1,1,1,1
-	dc.w	1,1,1,1,1,1,1,1
+	dc.w	-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1
+	dc.w	-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,128
+	
 	dc.w	2,2,2,2,2,2,2,2
+	dc.w	1,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0
+	dc.w	0,0,0,1,0,0,0,0
+	dc.w	0,0,-3,-2,-1,0,1,2
+	dc.w	1,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,-1
+	dc.w	-1,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,1
 	dc.w	2,2,2,2,2,2,2,2
+	dc.w	3,3,3,3,3,3,3,3
+	dc.w	3,3,3,3,3,3,3,3
+	dc.w	4,4,4,4,4,4,4,4
+	dc.w	4,4,4,4,4,4,4,4
+	dc.w	5,5,5,5,5,5,5,5
+	dc.w	5,5,5,5,5,5,5,5
+	dc.w	5,5,5,5,5,5,5,5
+	dc.w	5,5,5,5,5,5,5,5
+	dc.w	5,5,5,5,5,5,5,5
+	dc.w	4,4,4,4,4,4,4,4
+	dc.w	4,4,4,4,4,4,4,4
+	dc.w	4,4,4,4,4,4,4,4
+	dc.w	3,3,3,3,3,3,3,3
 	dc.w	3,3,3,3,3,3,3,3
 	dc.w	2,2,2,2,2,2,2,2
 	dc.w	2,2,2,2,2,2,2,2
 	dc.w	1,1,1,1,1,1,1,1
-	dc.w	1,1,1,1,1,1,1,1
 	dc.w	0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
+	dc.w	-3,-3,-3,-3,-3,-3,-3,-3
+	dc.w	-3,-3,-3,-3,-3,-3,-3,-3
+	dc.w	-4,-4,-4,-4,-4,-4,-4,-4
+	dc.w	-4,-4,-4,-4,-4,-4,-4,-4
+	dc.w	-4,-4,-4,-4,-4,-4,-4,-4
+	dc.w	-4,-4,-4,-4,-4,-4,-4,-4
+	dc.w	-4,-4,-4,-4,-4,-4,-4,-4
+	dc.w	-3,-3,-3,-3,-3,-3,-3,-3
+	dc.w	-3,-3,-3,-3,-3,-3,-3,-3
+	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	0,0,0,0,0,0,0,0,128
 	dc.w	16,16,16,16,16,16,16,16
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1
@@ -1328,8 +1385,19 @@ dreieck:
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	128	
+sinus:
+;	dc.w	1,0,0,0,1,0,0,0,-1,0,0,-1,0,0,0,128
+;	dc.w	1,1,1,1,2,0,0,0,3,0,0,0,2,0,0,0,1,0,0,0,0,0,0,0
+;	dc.w	-1,0,0,0,-2,0,0,0,-2,0,0,0,-1,0,0,0,0,0,0,0,128
+	dc.w	1,0,0,1,0,0,1,0,0,1,0,0,2,0,0,1,0,0,2,0,0,1,0,0,2,0,0,2
+	dc.w	0,0,2,0,0,2,0,0,3,0,0,2,0,0,3,0,0,2,0,0,3,0,0,3,0,0,3,0,0,3
+	dc.w	2,0,0,3,0,0,2,0,0,3,0,0,2,0,0,2,0,0,2,0,0,2,0,0,1,0,0,2,0,0,1,0,0,1,0,0,1,0,0,1
+	dc.w	0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,0,0,-1,0,0,0,0,0,-1
+	dc.w	-1,0,0,-1,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-2,0,0,-2,0,0,-3,0,0,-2
+	dc.w	-3,0,0,-3,0,0,-3,0,0,-2,0,0,-3,0,0,-2,0,0,-2,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,0,0,0,-1,0,0,0,0,0,0
+	dc.w	128
 ;Panic buffer for scrolltext
-	dc.b	01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
+	dc.b	01,0,0,01,0,0,01,0,0,01,0,0,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 	dc.b	01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 scrolltext:
 	dc.b	87,87

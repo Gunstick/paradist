@@ -376,7 +376,99 @@ cont4:
 	;INITIALISATIONS
 	;***** Calc next screenadress ****
 	move.l	screenadr,screenadr	;-9  
-	dcb	$4e71,63
+
+	dcb	$4e71,5
+
+
+
+
+	;***** Do the 8 following distorter entrys **** 
+	;; first copy the wave to the disttable
+	
+;Registerdefs: take care of the order. Modify also the addx.l !!!!
+d_0	equr	d0
+d_1	equr	d1
+d_2	equr	d2
+d_3	equr	d3
+a_0	equr	a0
+a_1	equr	a1
+a_2	equr	a2
+a_3	equr	a3
+
+
+	movem.l	disttable+16,d0-d7/a0-a3	;copy disttab
+	movem.l	d0-d7/a0-a3,disttable
+
+	dcb	$4e71,3
+
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8240.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+
+
+	lea	disttable+48,a_3	;position to write new
+	move.l	distwaveptr,a_0		;position in the actual wave
+	moveq	#7,d_0			;read 8
+	moveq	#0,d_3
+	move.w	distcalc,d_2
+
+	dcb	$4e71,27
+
+distwaveread:
+	dcb	$4e71,17	;mdist
+	dcb	$4e71,25	;digi
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	bra.s	cont
+notnextwavetab:			;~12 time adjust
+	dcb	$4e71,17
+	bra.s	_notnextwavetab	;~12
+notendwavetab:			;~12
+	bra.s	_notendwavetab	;~12
+	
+cont:
+	dcb	$4e71,5
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8240.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+
+	move.w	(a_0)+,d_1	;~8
+	cmp.w	#128,d_1	;~8
+	bne.s	notnextwavetab	;~8
+	move.l	wavetabptr,a_1	;~20 next wave to be read
+	bne.s	notendwavetab	;~8
+	lea	wavetab,a_1	;~12 reset wavetabptr
+	nop
+_notendwavetab:
+	move.l	(a_1)+,a_0	;~12
+	move.w	(a_0)+,d_1	;~12
+	move.l	a_1,wavetabptr	;~20
+_notnextwavetab:
+	add.w	d_1,d_3		;~4
+	add.w	d_1,d_2		;~4
+	sub.w	16(a_3),d_2	;~16
+	move.w	d_1,16(a_3)	;~12
+	move.w	d_2,(a_3)+	;~8 write new curve
+
+	dcb	$4e71,1
+	dbf	d_0,distwaveread	;~12/16
+
+	move.l	a_0,distwaveptr
+	move.w	d_3,distcalc
+
+
+
+
+
 ;	move.w	#221-16,d7
 	move.w	#32,d7
 	move.b	#0,$ffff820a.w	;Open right border
@@ -398,53 +490,9 @@ overscanloop:
 	move.b	#0,$ffff8260.w
 
 
-	;***** Do the 8 following distorter entrys **** 
-	;; first copy the wave to the disttable
-	
-;Registerdefs: take care of the order. Modify also the addx.l !!!!
-d_0	equr	d0
-d_1	equr	d1
-d_2	equr	d2
-d_3	equr	d3
-a_0	equr	a0
-a_1	equr	a1
-a_2	equr	a2
-a_3	equr	a3
 asd
-	movem.l	disttable+16,d0-d7/a0-a3	;copy disttab
-	movem.l	d0-d7/a0-a3,disttable
-	lea	disttable+48,a_3	;position to write new
-	move.l	distwaveptr,a_0		;position in the actual wave
-	moveq	#7,d_0			;read 8
-	moveq	#0,d_3
-	move.w	distcalc,d_2
-distwaveread:
-	move.w	(a_0)+,d_1
-	cmp.w	#128,d_1
-	bne.s	notnextwavetab
-	move.l	wavetabptr,a_1	;next wave to be read
-	bne.s	notendwavetab
-	lea	wavetab,a_1	;reset wavetabptr
-notendwavetab:
-	move.l	(a_1)+,a_0
-	move.w	(a_0)+,d_1
-	move.l	a_1,wavetabptr
-_notnextwavetab:
-	add.w	d_1,d_3
-	add.w	d_1,d_2
-	sub.w	16(a_3),d_2
-	move.w	d_1,16(a_3)
-	move.w	d_2,(a_3)+	;write new curve
-;	move.w	d_1,d_3
-;	sub.w	16(a_3),d_1	;sub old speed
-;	move.w	d_3,16(a_3)	;save new speed
-;	add.w	d_1,d_2		;calc new pos
-;	add	d_1,distcalc	;sum up for the next time
 
 
-	dbf	d_0,distwaveread
-	move.l	a_0,distwaveptr
-	move.w	d_3,distcalc
 	;=-| read the new distortions and shift the buffers
 	; letters of font must be 256 bytes !!!!!!!!
 	lea	disttable+8,a_3	;scroll begins 26 lines before end of screen
@@ -464,9 +512,6 @@ indistcalcloop:
 	addq.w	#8,count
 	bne.s	distcalcloop
 	bra	copydistscroll
-notnextwavetab:			;time adjust
-	dcb	$4e71,1	
-	bra.s	_notnextwavetab
 
 nottextend:
 	lea	1(a_1),a_1
@@ -1320,10 +1365,19 @@ disttable:
 	ds.w	26*2+100	;adjusttable for the two distorters
 	ds.w	1600	;panic for table
 wavetab:
-;	dc.l	dreieck
-	dc.l	sinus
+	dc.l	dreieck
+	dc.l	dreieck
+;	dc.l	sinus
 	dc.l	0	;end
 dreieck:
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,128
 	dc.w	1,0,1,0,1,0,1,0
 	dc.w	1,0,1,0,1,0,1,0
 	dc.w	1,0,1,0,1,0,1,0
@@ -2429,3 +2483,4 @@ black:	ds.l 8
 
 screen: ds.l 14300
 	end
+

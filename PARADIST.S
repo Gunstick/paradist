@@ -248,7 +248,6 @@ firsttopwait:
 	dbf	d0,firsttopwait
 	;move.b	#0,$ffff820a.w
 
-loop:
 ;ULM Hardware Scrolling PART 1
 ;THIS PART IS TO BE STARTED BEFORE THE BEGINNING OF THE VBL
 ;sets screen to adress contained in screenadr+(6 scanlines)
@@ -270,10 +269,11 @@ loop:
 	ext.w	d0		;~4
 	add.w	d0,d1		;~4
 	movep.w d1,0(a1)	;~16
-	move.l	a0,-(sp)	;~16 save tablepos
+	move.l	a0,tabentry-screenadr(a3)	;~16 save tablepos
 ;ULM Hardware Scrolling END OF PART 1
 
 
+loop:
 	bsr	waitvbl
 
 	movem.l black,d0-d7
@@ -281,13 +281,13 @@ loop:
 	movem.l hwpalette,d2-d7/a2-a3
 	lea	$ffff8209.w,a1
 	moveq	#10,d1
-	movea.l (sp)+,a0	;get back tablepos
+	movea.l tabentry,a0	;get back tablepos
 
 
 	move.w	#1500,d0
 opentopwait:
 	dbra	d0,opentopwait
-	dcb	$4e71,196-72
+	dcb	$4e71,196-72-2
 	move.b	#0,$ffff820a.w
 	move.w	#$007,$ffff8240.w
 	dcb	$4e71,8
@@ -381,6 +381,7 @@ cont4:
 	bne	scrnok			;~12
 	lea	scrnadrs-nextscrn(a3),a0		;~12
 	move.l	(a0)+,d0		;~12
+	move.l	#screen-(20*230),cpybufdest-nextscrn(a3);~24
 _scrnok:
 	move.l	d0,logbase-nextscrn(a3)		;~20
 	move.l	a0,(a3)		;~20
@@ -390,10 +391,10 @@ _scrnok:
 	move.l	hwbounceptr-nextscrn(a3),a0		;~20
 	move.w	(a0)+,d1		;~8
 	bne.s	hwbounceok		;~8
-	lea	hwbouncetab,a0		;~12
+	lea	hwbouncetab-nextscrn(a3),a0		;~8
 	move.w	(a0)+,d1		;~8
 _hwbounceok:
-	move.l	a0,hwbounceptr		;~20
+	move.l	a0,hwbounceptr-nextscrn(a3)		;~16
 	subi.w	#230*16,d1		;~8
 	ext.l	d1			;~4
 	add.l	d1,d0			;~8
@@ -402,7 +403,7 @@ _hwbounceok:
 
 
 
-	dcb	$4e71,4
+	dcb	$4e71,4+2-6
 	dcb	$4e71,25-23
 	dcb	$4e71,17
 
@@ -410,11 +411,11 @@ _hwbounceok:
 	move.b	#2,$ffff820a.w
 	bra.s	cont6
 scrnok:
-	dcb	$4e71,3-1
+	dcb	$4e71,3-1+6
 	bra 	_scrnok			;~12
 
 hwbounceok:
-	dcb	$4e71,1
+	dcb	$4e71,0
 	bra	_hwbounceok			;~12
 cont6:
 	dcb	$4e71,5
@@ -445,32 +446,8 @@ disthigh	equ	20
 	movem.l	d1-d7/a1,disttable
 
 	
-	dcb	$4e71,24
-;	dcb	$4e71,1
-	
-;ULM Hardware Scrolling PART 1
-;THIS PART IS TO BE STARTED BEFORE THE BEGINNING OF THE VBL
-;sets screen to adress contained in screenadr+(6 scanlines)
 
-;	moveq	#0,d1		;~4
-;	move.b	3(a3),d1	;~12
-;	move.w	d1,d0		;~4
-;	add.w	d1,d1		;~4
-;	add.w	d0,d1		;~4
-;	add.w	d1,d1		;~4
-;	add.w	d1,d1		;~4    *12 (24 byte per tabentry)
-;	lea	$ffff8201.w,a1	;~8
-;	lea	hwscrolldat,a0	;~12
-;	add.w	d1,a0		;~8
-;	movep.w 1(a3),d1	;~16
-;	move.b	2(a3),d1	;~12
-;	move.b	(a0)+,d0	;~8
-;	ext.w	d0		;~4
-;	add.w	d0,d1		;~4
-;	movep.w d1,0(a1)	;~16
-;	move.l	a0,-(sp)	;~16 save tablepos
-;ULM Hardware Scrolling END OF PART 1
-	dcb	$4e71,25-24
+	dcb	$4e71,25
 	dcb	$4e71,17
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -612,7 +589,34 @@ indistcalcloop:
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,41-4
+
+;ULM Hardware Scrolling PART 1
+;THIS PART IS TO BE STARTED BEFORE THE BEGINNING OF THE VBL
+;sets screen to adress contained in screenadr+(6 scanlines)
+
+	lea	screenadr,a3	;~12
+	moveq	#0,d1		;~4
+	move.b	3(a3),d1	;~12
+	move.w	d1,d0		;~4
+	add.w	d1,d1		;~4
+	add.w	d0,d1		;~4
+	add.w	d1,d1		;~4
+	add.w	d1,d1		;~4    *12 (24 byte per tabentry)
+	lea	$ffff8201.w,a1	;~8
+	lea	hwscrolldat-screenadr(a3),a0	;~8
+	add.w	d1,a0		;~8
+	movep.w 1(a3),d1	;~16
+	move.b	2(a3),d1	;~12
+	move.b	(a0)+,d0	;~8
+	ext.w	d0		;~4
+	add.w	d0,d1		;~4
+	movep.w d1,0(a1)	;~16
+	move.l	a0,tabentry-screenadr(a3)	;~16 save tablepos
+;ULM Hardware Scrolling END OF PART 1
+
+
+
+;	dcb	$4e71,41-4-33
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -625,6 +629,22 @@ indistcalcloop:
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
+	rept 5
+	dcb	$4e71,41
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+; 	move.b	#2,$ffff8260.w	;Open left border
+;	move.b	#0,$ffff8260.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+	endr
 
 	bra	copydistscroll
 
@@ -988,6 +1008,9 @@ endcpy:
 ;	dbf	d0,ttestinitbuff
 
 
+	;**********************************************************
+	;buffercopy
+		
 	;**********************************************************
 
 
@@ -1937,6 +1960,10 @@ screenad2:ds.l 1
 screenadr:ds.l 1
 logbase:	ds.l	1	;screen where to put scroll
 black:	ds.l 8
+tabentry:
+	ds.l	1	;for hwscroll
+cpybufdest:
+	ds.l	1	;copy from (this+4buffers-1scroll) to (this) 
 nextscrn:
 	ds.l	1	;points to next screenadress to be used
 shiftcnt:

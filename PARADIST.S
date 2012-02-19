@@ -606,11 +606,8 @@ asd
 
 	;=-| read the new distortions and shift the buffers
 	; letters of font must be 256 bytes !!!!!!!!
-
-
 	;-> advance this line by one word
 vorwaerts:
-
 	move.w	d_2,(a_0)	;~8 write back new shift
 	move.l	textptr-shift(a_0),a_1	;~16
 	dcb	$4e71,2
@@ -711,20 +708,24 @@ vorbufok:
 	addq.l	#8,bufptr-shift(a_0)	;~16
 	dcb	$4e71,9-5
 vorbufnok:
-	dcb	$4e71,3+5
+	dcb	$4e71,5
 	dcb	$4e71,2
 	
 
+call_shifter:	
 	;write first buffer
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~24
 	lea	26*8(a_1),a_1	;~8
-	move.w	#7,shiftcnt	
+	move.w	#7,shiftcnt	;~16
 shifter:	;(~12)
-	dcb	$4e71,25-3
+	dcb	$4e71,25
 	dcb	$4e71,17
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8
+	dcb	$4e71,8-3
+	swap	d_1	;~4
+ 	addx.w	d1,d1	;~4	;a out
+	swap	d_1	;~4
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 	movem.l	d0/d1/d2,$ffff8250.w	;mdist
@@ -732,9 +733,6 @@ shifter:	;(~12)
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
-	swap	d_1	;~4
- 	addx.w	d1,d1	;~4	;a out
-	swap	d_1	;~4
  	addx.l	d0,d0	;~8	;a in and d out
  	addx.l	d3,d3	;~8	;d in and c out
  	addx.l	d2,d2	;~8	;c in and b out
@@ -754,7 +752,7 @@ shifter:	;(~12)
 	subq.w	#1,shiftcnt	;~20
 	bne	shifter		;~12
 
-	dcb	$4e71,25-3
+	dcb	$4e71,25
 	dcb	$4e71,17
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -780,19 +778,43 @@ shifter:	;(~12)
 
 
 	;-< back this line by one word
-rueckbufok:
-;	subq.w	#4,bufcnt-shift(a_0)
-	sub.l	#8,bufptr-shift(a_0)
-	bra.s	_rueckbufok
+
+
+
+
+
 rueckwaerts:
-	add.w	#16,d_2
-	move.w	d_2,(a_0)		;write back new shift
-	subq.w	#4,bufcnt-shift(a_0)
-	bhs.s	rueckbufok
-	move.w	#25*4,bufcnt-shift(a_0)	;screenwidth = 26 words
-	add.l	#25*8,bufptr-shift(a_0)
+	add.w	#16,d_2			;~8
+	move.w	d_2,(a_0)		;~8 write back new shift
+	dcb	$4e71,2+7
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+
+
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	bra.s	cont5
+rueckbufok:
+	subq.l	#8,bufptr-shift(a_0)	;~16
+	DCB	$4E71,2
+	bra.s	_rueckbufok		;~12
+cont5:
+	dcb	$4e71,5
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+
+
+	subq.w	#4,bufcnt-shift(a_0)	;~12
+	bhs.s	rueckbufok		;~8
+	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
+	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok:
-	move.l	textptr-shift(a_0),a_1
+	move.l	textptr-shift(a_0),a_1	;~16
+	dcb	$4e71,7
 	;movep : 5 nops weniger
 	;actual = if any bit of the letter appears in one buffer
 	;		             textptr
@@ -800,41 +822,54 @@ _rueckbufok:
 	;YEAH THIS IS UNLIMITED MATRICKS	a bit of C appears somewhere
 	;a bit of A appears somewhere
 	;now we have to write a bit of E and A 
-	movep.w	-27(a_1),d_1	;previous letter : E
-	movep.w	-26(a_1),d_2	;act letter	 : A
-	lea	-1(a_1),a_1
-	move.l	a_1,textptr-shift(a_0)	;textptr points to I
-	clr.b	d_1	;E
-	clr.b	d_2	;A
-	lea	font,a_1
-
-	lea	font+(26*8),a_1
-	add.w	count,a_1
-	lea	(a_1,d_1),a_2	;E
-	movem.l	(a_1,d_2),d_1/d_3	;A
+	movep.w	-27(a_1),d_1	;~16 previous letter : E
+	movep.w	-26(a_1),d_2	;~16 act letter	 : A
+	lea	-1(a_1),a_1	;~8
+	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
+	clr.b	d_1	;~4 E
+	clr.b	d_2	;~4 A
+	lea	font+(18*8),a_1	;~12
+	add.w	count,a_1	;~20
+	lea	(a_1,d_1),a_2	;~12 E
+	movem.l	(a_1,d_2),d_1/d_3	;~36 A
 	;d0:xxxxxxxxxxxxxxxx
 	;d1:aaaaaaaabbbbbbbb
 	;d2:xxxxxxxxxxxxxxxx
 	;d3:ccccccccdddddddd
-	move.l	bufptr-shift(a_0),a_1
-	move.w	d_1,d_2
-	move.w	d_3,d_0
+	
+	dcb	$4e71,17		;mdist
+
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+
+
+	move.l	bufptr-shift(a_0),a_1	;~16
+	move.w	d_1,d_2		;~4
+	move.w	d_3,d_0		;~4
 	;d0:xxxxxxxxdddddddd
 	;d1:aaaaaaaabbbbbbbb
 	;d2:xxxxxxxxbbbbbbbb
 	;d3:ccccccccdddddddd
-	swap	d_0
-	swap	d_2
+	swap	d_0		;~4
+	swap	d_2		;~4
 	;d0:ddddddddxxxxxxxxx
 	;d1:aaaaaaaabbbbbbbbb
 	;d2:bbbbbbbbxxxxxxxxx
 	;d3:ccccccccddddddddd
-	move.l	bufptr-shift(a_0),a_1
+
 	;prepare shifter
-	move.w	(a_2)+,d_0
-	move.w	(a_2)+,d_1
-	move.w	(a_2)+,d_2
-	move.w	(a_2)+,d_3		;E
+	move.l	bufptr-shift(a_0),a_1	;~16
+	move.w	(a_2)+,d_0	;~8 E
+	move.w	(a_2)+,d_1	;~8
+	move.w	(a_2)+,d_2	;~8
+	move.w	(a_2)+,d_3	;~8
 
 	;uff one line of the 2 letters is in d0-d3
 	;	   A	    E
@@ -843,38 +878,14 @@ _rueckbufok:
 	;d2	bbbbbbbb|CCCCCCCC
 	;d3	cccccccc|DDDDDDDD
 	;write first buffer
-	movem.w	d_0/d_1/d_2/d_3,(a_1)
-	lea	26*8(a_1),a_1	;~8
-
-
-
-
-
-
-
-
-	rept	15
-	move	#0,ccr
-	swap	d_1	;~4
- 	addx.w	d1,d1	;~4	;a out
-	swap	d_1	;~4
- 	addx.l	d0,d0	;~8	;a in and d out
- 	addx.l	d3,d3	;~8	;d in and c out
- 	addx.l	d2,d2	;~8	;c in and b out
- 	addx.w	d1,d1	;~4	;b in
-	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
-	lea	26*8(a_1),a_1	;~8
-	endr
-	bra	indistcalcloop
-
-
-
+	dcb	$4e71,5
+	bra	call_shifter	
 
 
 copydistscroll:
 	;**** Copy all the buffers to the screen ****
 	move.l	screenadr,a6	;put it there
-	add.l	#6*160,a6	;for hwscroll
+	add.l	#6*160+230*200,a6	;for hwscroll
 	lea	buffer,a4
 	moveq	#18,d0		;scrollhigh:18
 ;	not	$ffff8240.w
@@ -888,7 +899,8 @@ scrollcpy:
 	lea	cpyjsr,a0
 	move.l	(a0,d1),a0
 ;	move.l	a5,a6
-	jsr	(a0)		;(a5)+ -> (a6)
+	jmp	(a0)		;(a5)+ -> (a6)
+endcpy:
 	lea	230(a6),a6
 	lea	linebuffend-linebuffbegin(a4),a4
 	dbf	d0,scrollcpy
@@ -1079,7 +1091,7 @@ cpy00:	;7,9,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*43(a6)
 	
-	rts
+	bra	endcpy
 
 cpy01:	;2+5,9,9,9,9,9
 	movem.l	(a5)+,c0/c1
@@ -1097,7 +1109,7 @@ cpy01:	;2+5,9,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*41(a6)
 
-	rts
+	bra	endcpy
 
 cpy02:	;4+3,9,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3
@@ -1115,7 +1127,7 @@ cpy02:	;4+3,9,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*39(a6)
 
-	rts
+	bra	endcpy
 
 cpy03:	;6+1,9,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
@@ -1133,7 +1145,7 @@ cpy03:	;6+1,9,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*37(a6)
 
-	rts
+	bra	endcpy
 
 cpy04:	;8,8,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
@@ -1151,7 +1163,7 @@ cpy04:	;8,8,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*35(a6)
 
-	rts
+	bra	endcpy
 
 cpy05:	;9,1+6,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1169,7 +1181,7 @@ cpy05:	;9,1+6,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*33(a6)
 
-	rts
+	bra	endcpy
 
 cpy06:	;9,3+4,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1187,7 +1199,7 @@ cpy06:	;9,3+4,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*31(a6)
 
-	rts
+	bra	endcpy
 
 cpy07:	;9,5+2,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1205,7 +1217,7 @@ cpy07:	;9,5+2,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*29(a6)
 
-	rts
+	bra	endcpy
 
 cpy08:	;9,7,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1223,7 +1235,7 @@ cpy08:	;9,7,9,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*27(a6)
 
-	rts
+	bra	endcpy
 
 cpy09:	;9,9,7,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1241,7 +1253,7 @@ cpy09:	;9,9,7,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*25(a6)
 
-	rts
+	bra	endcpy
 
 cpy10:	;9,9,2+5,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1259,7 +1271,7 @@ cpy10:	;9,9,2+5,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*23(a6)
 
-	rts
+	bra	endcpy
 
 cpy11:	;9,9,4+3,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1277,7 +1289,7 @@ cpy11:	;9,9,4+3,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*21(a6)
 
-	rts
+	bra	endcpy
 
 cpy12:	;9,9,6+1,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1295,7 +1307,7 @@ cpy12:	;9,9,6+1,9,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*19(a6)
 
-	rts
+	bra	endcpy
 
 cpy13:	;9,9,8,8,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1313,7 +1325,7 @@ cpy13:	;9,9,8,8,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*17(a6)
 
-	rts
+	bra	endcpy
 
 cpy14:	;9,9,9,1+6,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1331,7 +1343,7 @@ cpy14:	;9,9,9,1+6,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*15(a6)
 
-	rts
+	bra	endcpy
 
 cpy15:	;9,9,9,3+4,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1349,7 +1361,7 @@ cpy15:	;9,9,9,3+4,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*13(a6)
 
-	rts
+	bra	endcpy
 
 cpy16:	;9,9,9,5+2,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1367,7 +1379,7 @@ cpy16:	;9,9,9,5+2,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*11(a6)
 
-	rts
+	bra	endcpy
 
 cpy17:	;9,9,9,7,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1385,7 +1397,7 @@ cpy17:	;9,9,9,7,9,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*9(a6)
 
-	rts
+	bra	endcpy
 
 cpy18:	;9,9,9,9,7,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1403,7 +1415,7 @@ cpy18:	;9,9,9,9,7,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*7(a6)
 
-	rts
+	bra	endcpy
 
 cpy19:	;9,9,9,9,2+5,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1421,7 +1433,7 @@ cpy19:	;9,9,9,9,2+5,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*5(a6)
 
-	rts
+	bra	endcpy
 
 cpy20:	;9,9,9,9,4+3,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1439,7 +1451,7 @@ cpy20:	;9,9,9,9,4+3,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*3(a6)
 
-	rts
+	bra	endcpy
 
 cpy21:	;9,9,9,9,6+1,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1457,7 +1469,7 @@ cpy21:	;9,9,9,9,6+1,9
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7/c8,4*1(a6)
 
-	rts
+	bra	endcpy
 
 cpy22:	;9,9,9,9,8,8
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1475,7 +1487,7 @@ cpy22:	;9,9,9,9,8,8
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7
 	movem.l		c0/c1/c2/c3/c4/c5/c6/c7,(a6)
 
-	rts
+	bra	endcpy
 
 cpy23:	;9,9,9,9,9,1+6
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1493,7 +1505,7 @@ cpy23:	;9,9,9,9,9,1+6
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,(a6)
 
-	rts
+	bra	endcpy
 
 cpy24:	;9,9,9,9,9,3+4
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1511,7 +1523,7 @@ cpy24:	;9,9,9,9,9,3+4
 	movem.l	(a5)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,(a6)
 
-	rts
+	bra	endcpy
 
 cpy25:	;9,9,9,9,9,5+2
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6/c7/c8
@@ -1529,7 +1541,7 @@ cpy25:	;9,9,9,9,9,5+2
 	movem.l	(a5)+,c0/c1
 	movem.l		c0/c1,(a6)
 
-	rts
+	bra	endcpy
 	;
 	;**********************************************************
 
@@ -1541,12 +1553,13 @@ font	equ	*-32*8
 	incbin	"font.bin"
 	even
 wavetab:
-;	dc.l	wordschief
-;	dc.l	byteschief
+	dc.l	wordschief
+;	dc.l	wordhinher
+	dc.l	byteschief
 ;	dc.l	nix
-;	dc.l	dreieck
-;	dc.l	dreieck
-;	dc.l	sinus
+	dc.l	dreieck
+	dc.l	dreieck
+	dc.l	sinus
 	dc.l	sinschief
 	dc.l	0	;end
 sinschief;
@@ -1554,6 +1567,9 @@ sinschief;
 	dc.w  0,0,1,0,0,1,0,0,2,0,0,1,0,0,1,0,0,2,0,0,2,0,0,2,0,0,2,0,0,1,0,0,1
 	dc.w 0,0,2,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128
 
+	dc.w	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+wordhinher:
+	dc.w	-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,128
 wordschief:
 	dc.w	2,2,2,2,2,2,2,2
 	dc.w	2,2,2,2,2,2,2,2
@@ -1777,6 +1793,10 @@ linebuffend:
 	endr
 
 
-screen: ds.l 14300
+screen: 
+	rept	1
+	ds.l 8000
+	ds.l 8000
+	endr
 	end
 

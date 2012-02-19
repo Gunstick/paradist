@@ -55,7 +55,8 @@ clear_loop:
 	dbra	d0,clear_loop
 
 	movea.l screenad2,a0
-	movem.l graphic,d6-d7
+;	movem.l graphic,d6-d7
+	movem.l black,d6-d7
 	move.w	#285,d2
 allline:
 	ifne overscan
@@ -122,7 +123,6 @@ alles:
 	movem.l d0-d7,(a1)
 
 	bsr.s	waitvbl
-	move.b	#0,$ffff820a.w
 
 	rts
 
@@ -176,7 +176,9 @@ initdist:
 	move.l	a0,distwaveptr
 	move.l	#disttable,disttableptr
 	move.l	#scrnadrs,nextscrn
+	move.l	#screen-230*20,cpybufdest
 
+	bra	kaka
 	lea	font,a0
 	lea	buffer,a1
 	moveq	#25,d0		;init all unshiftet linebuffers
@@ -236,7 +238,7 @@ testinitbuff:
 	addq.l	#8,a0
 	lea	linebuffend-linebuffbegin-208(a1),a1
 	dbf	d0,testinitbuff
-
+kaka:
 	;********************************************************
 
 	lea	screenadr,a3
@@ -381,7 +383,8 @@ cont4:
 	bne	scrnok			;~12
 	lea	scrnadrs-nextscrn(a3),a0		;~12
 	move.l	(a0)+,d0		;~12
-	move.l	#screen-(20*230),cpybufdest-nextscrn(a3);~24
+;	move.l	#screen-(20*230)+160*6,cpybufdest-nextscrn(a3);~24
+	dcb	$4e71,6
 _scrnok:
 	move.l	d0,logbase-nextscrn(a3)		;~20
 	move.l	a0,(a3)		;~20
@@ -399,7 +402,7 @@ _hwbounceok:
 	ext.l	d1			;~4
 	add.l	d1,d0			;~8
 	move.l	d0,screenadr-nextscrn(a3);~16
-;	dcb	$4e71,4
+; 	dcb	$4e71,4
 
 
 
@@ -1010,7 +1013,28 @@ endcpy:
 
 	;**********************************************************
 	;buffercopy
-		
+bbb
+	move.l	cpybufdest,a6		;write there
+	move.l	a6,a5
+	add.l	#230*280*4-230*20,a5	;read here	
+	rept	5
+	movem.l	(a5)+,d0-d7/a0-a4	
+	movem.l	d0-d7/a0-a4,(a6)
+	movem.l	(a5)+,d0-d7/a0-a4	
+	movem.l	d0-d7/a0-a4,52(a6)
+	movem.l	(a5)+,d0-d7/a0-a4	
+	movem.l	d0-d7/a0-a4,104(a6)
+	movem.l	(a5)+,d0-d7/a0-a4	
+	movem.l	d0-d7/a0-a4,156(a6)	;4*13*4=208:1 line copied
+	lea	230(a6),a6		;next line
+	lea	22(a5),a5
+	endr
+
+	move.l	a6,cpybufdest	;position to write during next vbl
+	cmp.l	#scrnadrs+4,nextscrn
+	bne.s	notreset
+	move.l	#screen-(15*230)+160*6,cpybufdest
+notreset:
 	;**********************************************************
 
 
@@ -1631,6 +1655,7 @@ cpy25:	;9,9,9,9,9,5+2
 hwbounceptr:	dc.l	hwbouncetab
 hwbouncetab:
 	dc.w	230*16,230*16
+	dc.w	0
 	dc.w	230*15,230*15
 	dc.w	230*14,230*14
 	dc.w	230*13,230*12
@@ -1644,7 +1669,6 @@ hwbouncetab:
 	dc.w	230*15,230*15
 	dc.w	230*16,230*16
 	dc.w	230*16,230*16
-	dc.w	0
 scrnadrs:
 	dc.l	screen+64400*0
 	dc.l	screen+64400*1
@@ -1701,17 +1725,21 @@ scrnadrs:
 	dc.l	screen+64400*0+230*260
 	dc.l	screen+64400*1+230*260
 	dc.l	screen+64400*2+230*260
-	dc.l	screen+64400*3+230*260
+;	dc.l	screen+64400*3+230*260
+;	dc.l	screen+64400*0+230*280
 	dc.l	0
 font	equ	*-32*8
 	incbin	"font.bin"
 	even
 wavetab:
+;	dc.l	byteschief,0
+	dc.l	hops1
 	dc.l	nix
 	dc.l	nix
 	dc.l	nix
 	dc.l	wordschief
 	dc.l	wordschief
+	dc.l	byteschief
 	dc.l	byteschief
 	dc.l	byteschief
 	dc.l	byteschief
@@ -1779,6 +1807,7 @@ byteschief:
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1,128
+hops1:	dc.w	1
 nix:	dc.w	0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -2003,7 +2032,7 @@ linebuffend:
 	ds.l	2*26*16+1+1+1
 	endr
 
-
+	ds.l	230*40
 screen: 
 	rept	5
 	ds.l 8000

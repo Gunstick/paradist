@@ -175,7 +175,7 @@ initdist:
 	move.l	(a0),a0
 	move.l	a0,distwaveptr
 	move.l	#disttable,disttableptr
-
+	move.l	#scrnadrs,nextscrn
 
 	lea	font,a0
 	lea	buffer,a1
@@ -375,12 +375,34 @@ cont4:
 	;	Distorted scroller by Gunstick
 	;INITIALISATIONS
 	;***** Calc next screenadress ****
-	move.l	screenadr,screenadr	;-9  
+	move.l	nextscrn,a0		;~20
+	move.l	(a0)+,screenadr		;~28
+	bne	scrnok			;~12
+	lea	scrnadrs,a0		;~8
+	move.l	(a0)+,screenadr		;~28
+_scrnok:
+	move.l	a0,nextscrn		;~20
+	dcb	$4e71,32-19-7
+	dcb	$4e71,25
+	dcb	$4e71,17
 
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	bra.s	cont6
+scrnok:
+	nop
+	nop
+	nop
+	bra.s	_scrnok			;~12
+
+cont6:
 	dcb	$4e71,5
-
-
-
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
 
 	;***** Do the 8 following distorter entrys **** 
 	;; first copy the wave to the disttable
@@ -401,8 +423,10 @@ disthigh	equ	20
 	movem.l	disttable+distspeed*2,d0-d7	;copy disttab
 	movem.l	d0-d7,disttable
 
-	dcb	$4e71,3+4*4
+	dcb	$4e71,4*4
 
+	dcb	$4e71,25-16
+	dcb	$4e71,17
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,8
@@ -412,6 +436,7 @@ disthigh	equ	20
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
+	dcb	$4e71,0
 
 
 	lea	disttable+disthigh*2-distspeed*2,a_3	;position to write new
@@ -532,18 +557,6 @@ indistcalcloop:
 	bne	distcalcloop	;~12
 
 	dcb	$4e71,41-20
-	dcb	$4e71,25	;digi
-	dcb	$4e71,17	;mdist
-	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
-	dcb	$4e71,8
-	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
- 	move.b	#2,$ffff8260.w	;Open left border
-	move.b	#0,$ffff8260.w
-	move.l	d3,$ffff824e.w	;mdist
-	dcb	$4e71,41
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1549,39 +1562,149 @@ cpy25:	;9,9,9,9,9,5+2
 
 	;**********************************************************
 	;	Distorted scroller by Gunstick
+scrnadrs:
+	dc.l	screen+64000*0
+	dc.l	screen+64000*1
+	dc.l	screen+64000*2
+	dc.l	screen+64000*3
+	dc.l	screen+64000*0+230*20
+	dc.l	screen+64000*1+230*20
+	dc.l	screen+64000*2+230*20
+	dc.l	screen+64000*3+230*20
+	dc.l	screen+64000*0+230*40
+	dc.l	screen+64000*1+230*40
+	dc.l	screen+64000*2+230*40
+	dc.l	screen+64000*3+230*40
+	dc.l	screen+64000*0+230*60
+	dc.l	screen+64000*1+230*60
+	dc.l	screen+64000*2+230*60
+	dc.l	screen+64000*3+230*60
+	dc.l	screen+64000*0+230*80
+	dc.l	screen+64000*1+230*80
+	dc.l	screen+64000*2+230*80
+	dc.l	screen+64000*3+230*80
+	dc.l	screen+64000*0+230*100
+	dc.l	screen+64000*1+230*100
+	dc.l	screen+64000*2+230*100
+	dc.l	screen+64000*3+230*100
+	dc.l	screen+64000*0+230*120
+	dc.l	screen+64000*1+230*120
+	dc.l	screen+64000*2+230*120
+	dc.l	screen+64000*3+230*120
+	dc.l	screen+64000*0+230*140
+	dc.l	screen+64000*1+230*140
+	dc.l	screen+64000*2+230*140
+	dc.l	screen+64000*3+230*140
+	dc.l	screen+64000*0+230*160
+	dc.l	screen+64000*1+230*160
+	dc.l	screen+64000*2+230*160
+	dc.l	screen+64000*3+230*160
+	dc.l	screen+64000*0+230*180
+	dc.l	screen+64000*1+230*180
+	dc.l	screen+64000*2+230*180
+	dc.l	screen+64000*3+230*180
+	dc.l	screen+64000*0+230*200
+	dc.l	screen+64000*1+230*200
+	dc.l	screen+64000*2+230*200
+	dc.l	screen+64000*3+230*200
+	dc.l	screen+64000*0+230*220
+	dc.l	screen+64000*1+230*220
+	dc.l	screen+64000*2+230*220
+	dc.l	screen+64000*3+230*220
+	dc.l	screen+64000*0+230*240
+	dc.l	screen+64000*1+230*240
+	dc.l	screen+64000*2+230*240
+	dc.l	screen+64000*3+230*240
+	dc.l	screen+64000*0+230*260
+	dc.l	screen+64000*1+230*260
+	dc.l	screen+64000*2+230*260
+	dc.l	screen+64000*3+230*260
+	dc.l	screen+64000*0+230*280
+	dc.l	screen+64000*1+230*280
+	dc.l	screen+64000*2+230*280
+	dc.l	screen+64000*3+230*280
+	dc.l	0
 font	equ	*-32*8
 	incbin	"font.bin"
 	even
 wavetab:
+	dc.l	nix
+	dc.l	nix
+	dc.l	nix
 	dc.l	wordschief
-;	dc.l	wordhinher
+	dc.l	wordschief
 	dc.l	byteschief
-;	dc.l	nix
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	byteschief
+	dc.l	nix
+	dc.l	nix
+	dc.l	wordhinher
+	dc.l	nix
+	dc.l	nix
+;	dc.l	dreieck
+	dc.l	dreieck
+	dc.l	dreieck
+	dc.l	dreieck
+	dc.l	dreieck
+	dc.l	dreieck
+	dc.l	dreieck
+	dc.l	dreieck
 	dc.l	dreieck
 	dc.l	dreieck
 	dc.l	sinus
+	dc.l	sinus
+	dc.l	sinus
+	dc.l	sinus
+	dc.l	sinus
+	dc.l	sinus
 	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	bigsin
 	dc.l	0	;end
 sinschief;
-	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1
+	dc.w	0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1
 	dc.w  0,0,1,0,0,1,0,0,2,0,0,1,0,0,1,0,0,2,0,0,2,0,0,2,0,0,2,0,0,1,0,0,1
 	dc.w 0,0,2,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128
 
-	dc.w	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 wordhinher:
+	dc.w	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 	dc.w	-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,128
 wordschief:
 	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,20
 	dc.w	0
 	dc.w	3,2,2,2,2,2,2,2,128
 byteschief:
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
+	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1,128
-nix:	dc.w	0,128
+nix:	dc.w	0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	dc.w	1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -1649,9 +1772,6 @@ dreieck:
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	128	
 sinus:
-;	dc.w	1,0,0,0,1,0,0,0,-1,0,0,-1,0,0,0,128
-;	dc.w	1,1,1,1,2,0,0,0,3,0,0,0,2,0,0,0,1,0,0,0,0,0,0,0
-;	dc.w	-1,0,0,0,-2,0,0,0,-2,0,0,0,-1,0,0,0,0,0,0,0,128
 	dc.w	1,0,0,1,0,0,1,0,0,1,0,0,2,0,0,1,0,0,2,0,0,1,0,0,2,0,0,2
 	dc.w	0,0,2,0,0,2,0,0,3,0,0,2,0,0,3,0,0,2,0,0,3,0,0,3,0,0,3,0,0,3
 	dc.w	2,0,0,3,0,0,2,0,0,3,0,0,2,0,0,2,0,0,2,0,0,2,0,0,1,0,0,2,0,0,1,0,0,1,0,0,1,0,0,1
@@ -1659,8 +1779,13 @@ sinus:
 	dc.w	-1,0,0,-1,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-2,0,0,-2,0,0,-3,0,0,-2
 	dc.w	-3,0,0,-3,0,0,-3,0,0,-2,0,0,-3,0,0,-2,0,0,-2,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,0,0,0,-1,0,0,0,0,0,0
 	dc.w	128
+bigsin:	dc.w	1,0,0,1,0,0,1,0,0,2,0,0,2,0,0,2,0,0,3,0,0,3,0,0,3,0,0,4,0,0,4,0,0,4
+	dc.w	5,0,0,5,0,0,5,0,0,4,0,0,4,0,0,3,0,0,3,0,0,2,0,0,2,0,0,1,0,0,1,0,0,0
+	dc.w	0,0,0,-1,0,0,-1,0,0,-2,0,0,-2,0,0,-3,0,0,-3,0,0,-4
+	dc.w	-4,0,0,-5,0,0,-5,0,0,-4,0,0,-4,0,0,-4,0,0,-3,0,0,-3
+	dc.w	-3,0,0,-2,0,0,-2,0,0,-2,0,0,-1,0,0,-1,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,128
 ;Panic buffer for scrolltext
-	dc.b	01,0,0,01,0,0,01,0,0,01,0,0,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
+	dc.b	01,0,0,0,0,0,0,0,0,01,0,0,01,0,0,01,0,0,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 	dc.b	01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 scrolltext:
 	dc.b	87,87
@@ -1755,6 +1880,8 @@ screenad1:ds.w 1
 screenad2:ds.l 1
 screenadr:ds.l 1
 black:	ds.l 8
+nextscrn:
+	ds.l	1	;points to next screenadress to be used
 shiftcnt:
 	ds.w	1	;counter for shifter
 count:
@@ -1794,7 +1921,7 @@ linebuffend:
 
 
 screen: 
-	rept	1
+	rept	5
 	ds.l 8000
 	ds.l 8000
 	endr

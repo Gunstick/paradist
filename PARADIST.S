@@ -1,7 +1,8 @@
 overscan:equ 0
-
+;line 800
 ; Double Megadistorter by Gunstick   (c) ULM 1990
 
+;free d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 a3 a4 a5 a6 a7 usp
 
 	pea	start(pc)
 	move.w	#38,-(sp)
@@ -153,6 +154,7 @@ initend:
 
 screen2:
 
+;free d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 a3 a4 a5 a6    usp
 	move	sr,-(sp)
 	move	#$2700,sr
 	move.l	sp,stack
@@ -377,6 +379,8 @@ cont4:
 	;	Distorted scroller by Gunstick
 	;INITIALISATIONS
 	;***** Calc next screenadress ****
+
+	;free: d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 a3 a4 a5 a6    usp
 	lea	nextscrn,a3	;~12
 	move.l	(a3),a0		;~20
 	move.l	(a0)+,d0		;~12
@@ -403,6 +407,7 @@ _hwbounceok:
 	move.l	d0,screenadr-nextscrn(a3);~16
 ; 	dcb	$4e71,4
 
+	;free: d0-a6/usp
 
 
 	dcb	$4e71,4+4-6
@@ -471,6 +476,7 @@ disthigh	equ	20
 
 
 distwaveread:
+	;free: d4-d7/a2/a4-a6/usp
 	dcb	$4e71,17	;mdist
 	dcb	$4e71,25	;digi
 	move.b	#0,$ffff820a.w	;Open right border
@@ -512,6 +518,7 @@ _notnextwavetab:
 
 	dbf	d_0,distwaveread	;~12/16
 
+	;free: d1-d2/d4-d7/a0-a6/usp
 	dcb	$4e71,24	;digi
 	dcb	$4e71,17	;mdist
 
@@ -533,6 +540,7 @@ _notnextwavetab:
 	move.w	#-(18*8),count	;~20 scroll has 18 lines
 distcalcloop:	;(~12)
 
+	;free: d0/d3-d7/a1-a2/a4-a6/usp  cpy:d0/d3/a1/a2
 	move.w	(a_3)+,d_1	;~8
 	move.w	(a_0),d_2	;~8	;read shift
 	add.w	d_1,d_2		;~4
@@ -545,6 +553,7 @@ distcalcloop:	;(~12)
 	moveq	#7,d_2
 noshift:
 	nop
+	;free: d0/d3-d7/a1-a2/a4-a6/usp  cpy:d0/d3/a1/a2
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -560,6 +569,7 @@ noshift:
 	dbf	d_2,noshift
 	
 indistcalcloop:
+	;free: d0/d3-d7/a1-a2/a4-a6/usp  cpy:d0/d3/a1/a2
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -579,6 +589,9 @@ indistcalcloop:
 	bne	distcalcloop	;~12
 
 	dcb	$4e71,41-20
+
+
+	;free: d0-a6/usp  
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -631,7 +644,7 @@ indistcalcloop:
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
-	rept 1
+	rept 1    ;35
 	dcb	$4e71,41
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
@@ -797,7 +810,11 @@ call_shifter:
 	dcb	$4e71,5
 ***************************************************
 	dcb	$4e71,25
-	dcb	$4e71,17
+	dcb	$4e71,17-1-11
+	moveq	#0,d7
+; megadistorter test
+;	lea	0(a0,d7),a0
+	movem.l	(a0),d4/d5/d6/d7
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,8
@@ -1160,7 +1177,7 @@ copydistscroll:
 	add.l	#6*160+230*(280-20),a6	;for hwscroll
 	lea	buffer,a4
 	moveq	#18,d0		;scrollhigh:18
-;	not	$ffff8240.w
+	not	$ffff8240.w
 scrollcpy:
 	move.w	shift-buffer(a4),d1
 	mulu	#208,d1
@@ -1173,12 +1190,12 @@ scrollcpy:
 ;	move.l	a5,a6
 
 
-	jmp	(a0)		;(a5)+ -> (a6)
+	jmp	(a0)		;(a5)+ -> (a6)   uses d1-a1
 endcpy:
 	lea	230(a6),a6
 	lea	linebuffend-linebuffbegin(a4),a4
 	dbf	d0,scrollcpy
-;	not	$ffff8240.w
+	not	$ffff8240.w
 
 
 ;	lea	bufcnt,a5
@@ -1382,8 +1399,8 @@ cpyjsr:
 	dc.l	cpy20,cpy21,cpy22,cpy23,cpy24
 	dc.l	cpy25
 	;copy 208 bytes from (a5) to (a6)  (52 registers)
-	;6 movems : 9,9,9,9,9,7 regs	(6 scanlines)
-	;read/write: 24+8*n = 16*(1.5+n)    (max: 10.5)
+	;6 movems : 9,9,9,9,9,7 regs	(3 scanlines)
+	;read/write: 24+16*n = 16*(1.5+n)    (max: 10.5)
 c0	equr	a1
 c1	equr	d1
 c2	equr	d2

@@ -253,24 +253,24 @@ loop:
 ;THIS PART IS TO BE STARTED BEFORE THE BEGINNING OF THE VBL
 ;sets screen to adress contained in screenadr+(6 scanlines)
 
-	lea	screenadr,a3
-	moveq	#0,d1
-	move.b	3(a3),d1
-	move.w	d1,d0
-	add.w	d1,d1
-	add.w	d0,d1
-	add.w	d1,d1
-	add.w	d1,d1		;*12 (24 byte per tabentry)
-	lea	$ffff8201.w,a1
-	lea	hwscrolldat,a0
-	lea	0(a0,d1.w),a0
-	movep.w 1(a3),d1
-	move.b	2(a3),d1
-	move.b	(a0)+,d0
-	ext.w	d0
-	add.w	d0,d1
-	movep.w d1,0(a1)
-	move.l	a0,-(sp)
+	lea	screenadr,a3	;~12
+	moveq	#0,d1		;~4
+	move.b	3(a3),d1	;~12
+	move.w	d1,d0		;~4
+	add.w	d1,d1		;~4
+	add.w	d0,d1		;~4
+	add.w	d1,d1		;~4
+	add.w	d1,d1		;~4    *12 (24 byte per tabentry)
+	lea	$ffff8201.w,a1	;~8
+	lea	hwscrolldat,a0	;~12
+	add.w	d1,a0		;~8
+	movep.w 1(a3),d1	;~16
+	move.b	2(a3),d1	;~12
+	move.b	(a0)+,d0	;~8
+	ext.w	d0		;~4
+	add.w	d0,d1		;~4
+	movep.w d1,0(a1)	;~16
+	move.l	a0,-(sp)	;~16 save tablepos
 ;ULM Hardware Scrolling END OF PART 1
 
 
@@ -281,7 +281,7 @@ loop:
 	movem.l hwpalette,d2-d7/a2-a3
 	lea	$ffff8209.w,a1
 	moveq	#10,d1
-	movea.l (sp)+,a0
+	movea.l (sp)+,a0	;get back tablepos
 
 
 	move.w	#1500,d0
@@ -375,26 +375,47 @@ cont4:
 	;	Distorted scroller by Gunstick
 	;INITIALISATIONS
 	;***** Calc next screenadress ****
-	move.l	nextscrn,a0		;~20
-	move.l	(a0)+,screenadr		;~28
+	lea	nextscrn,a3	;~12
+	move.l	(a3),a0		;~20
+	move.l	(a0)+,d0		;~12
 	bne	scrnok			;~12
-	lea	scrnadrs,a0		;~8
-	move.l	(a0)+,screenadr		;~28
+	lea	scrnadrs-nextscrn(a3),a0		;~12
+	move.l	(a0)+,d0		;~12
 _scrnok:
-	move.l	a0,nextscrn		;~20
-	dcb	$4e71,32-19-7
-	dcb	$4e71,25
+	move.l	d0,logbase-nextscrn(a3)		;~20
+	move.l	a0,(a3)		;~20
+
+
+	;do some hardwarebouncing
+	move.l	hwbounceptr-nextscrn(a3),a0		;~20
+	move.w	(a0)+,d1		;~8
+	bne.s	hwbounceok		;~8
+	lea	hwbouncetab,a0		;~12
+	move.w	(a0)+,d1		;~8
+_hwbounceok:
+	move.l	a0,hwbounceptr		;~20
+	subi.w	#230*16,d1		;~8
+	ext.l	d1			;~4
+	add.l	d1,d0			;~8
+	move.l	d0,screenadr-nextscrn(a3);~16
+;	dcb	$4e71,4
+
+
+
+	dcb	$4e71,4
+	dcb	$4e71,25-23
 	dcb	$4e71,17
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	bra.s	cont6
 scrnok:
-	nop
-	nop
-	nop
-	bra.s	_scrnok			;~12
+	dcb	$4e71,3-1
+	bra 	_scrnok			;~12
 
+hwbounceok:
+	dcb	$4e71,1
+	bra	_hwbounceok			;~12
 cont6:
 	dcb	$4e71,5
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
@@ -420,12 +441,36 @@ a_3	equr	a3
 distspeed 	equ	5
 disthigh	equ	20
 ;copy (disthigh-distspeed)/2 registers
-	movem.l	disttable+distspeed*2,d0-d7	;copy disttab
-	movem.l	d0-d7,disttable
+	movem.l	disttable+distspeed*2,d1-d7/a1	;copy disttab
+	movem.l	d1-d7/a1,disttable
 
-	dcb	$4e71,4*4
+	
+	dcb	$4e71,24
+;	dcb	$4e71,1
+	
+;ULM Hardware Scrolling PART 1
+;THIS PART IS TO BE STARTED BEFORE THE BEGINNING OF THE VBL
+;sets screen to adress contained in screenadr+(6 scanlines)
 
-	dcb	$4e71,25-16
+;	moveq	#0,d1		;~4
+;	move.b	3(a3),d1	;~12
+;	move.w	d1,d0		;~4
+;	add.w	d1,d1		;~4
+;	add.w	d0,d1		;~4
+;	add.w	d1,d1		;~4
+;	add.w	d1,d1		;~4    *12 (24 byte per tabentry)
+;	lea	$ffff8201.w,a1	;~8
+;	lea	hwscrolldat,a0	;~12
+;	add.w	d1,a0		;~8
+;	movep.w 1(a3),d1	;~16
+;	move.b	2(a3),d1	;~12
+;	move.b	(a0)+,d0	;~8
+;	ext.w	d0		;~4
+;	add.w	d0,d1		;~4
+;	movep.w d1,0(a1)	;~16
+;	move.l	a0,-(sp)	;~16 save tablepos
+;ULM Hardware Scrolling END OF PART 1
+	dcb	$4e71,25-24
 	dcb	$4e71,17
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -436,8 +481,8 @@ disthigh	equ	20
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
-	dcb	$4e71,0
 
+	dcb	$4e71,27
 
 	lea	disttable+disthigh*2-distspeed*2,a_3	;position to write new
 	move.l	distwaveptr,a_0		;position in the actual wave
@@ -445,23 +490,22 @@ disthigh	equ	20
 	moveq	#0,d_3
 	move.w	distcalc,d_2
 
-	dcb	$4e71,26+3
 
 distwaveread:
-	dcb	$4e71,1
-	dcb	$4e71,17-3	;mdist
+	dcb	$4e71,17	;mdist
 	dcb	$4e71,25	;digi
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	bra.s	cont
 notnextwavetab:			;~12 time adjust
-	dcb	$4e71,19+1
+	dcb	$4e71,20
 	bra.s	_notnextwavetab	;~12
 notendwavetab:			;~12
 	bra.s	_notendwavetab	;~12
 	
 cont:
-	dcb	$4e71,5
+	move.w	(a_0)+,d_1	;~8
+	dcb	$4e71,3
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 	movem.l	d0/d1/d2,$ffff8250.w	;mdist
@@ -469,7 +513,6 @@ cont:
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
-	move.w	(a_0)+,d_1	;~8
 	cmp.w	#128,d_1	;~8
 	bne.s	notnextwavetab	;~8
 	move.l	wavetabptr,a_1	;~20 next wave to be read
@@ -490,7 +533,7 @@ _notnextwavetab:
 
 	dbf	d_0,distwaveread	;~12/16
 
-	dcb	$4e71,25-3	;digi
+	dcb	$4e71,24	;digi
 	dcb	$4e71,17	;mdist
 
 
@@ -897,8 +940,8 @@ _rueckbufok:
 
 copydistscroll:
 	;**** Copy all the buffers to the screen ****
-	move.l	screenadr,a6	;put it there
-	add.l	#6*160+230*200,a6	;for hwscroll
+	move.l	logbase,a6	;put it there
+	add.l	#6*160+230*(280-20),a6	;for hwscroll
 	lea	buffer,a4
 	moveq	#18,d0		;scrollhigh:18
 ;	not	$ffff8240.w
@@ -932,7 +975,7 @@ endcpy:
 ;	dbf	d0,wordscroll
 
 ;	lea	font,a0
-;	move.l	screenadr,a1	;put it there
+;	move.l	logbase,a1	;put it there
 ;	add.l	#6*160+40,a1	;for hwscroll
 ;	moveq	#26,d0		;init all unshiftet linebuffers
 ;ttestinitbuff:
@@ -1562,67 +1605,80 @@ cpy25:	;9,9,9,9,9,5+2
 
 	;**********************************************************
 	;	Distorted scroller by Gunstick
+hwbounceptr:	dc.l	hwbouncetab
+hwbouncetab:
+	dc.w	230*16,230*16
+	dc.w	230*15,230*15
+	dc.w	230*14,230*14
+	dc.w	230*13,230*12
+	dc.w	230*11,230*10
+	dc.w	230*8,230*6
+	dc.w	230*3,230*1
+	dc.w	230*3,230*6
+	dc.w	230*8,230*11
+	dc.w	230*12,230*13
+	dc.w	230*14,230*14
+	dc.w	230*15,230*15
+	dc.w	230*16,230*16
+	dc.w	230*16,230*16
+	dc.w	0
 scrnadrs:
-	dc.l	screen+64000*0
-	dc.l	screen+64000*1
-	dc.l	screen+64000*2
-	dc.l	screen+64000*3
-	dc.l	screen+64000*0+230*20
-	dc.l	screen+64000*1+230*20
-	dc.l	screen+64000*2+230*20
-	dc.l	screen+64000*3+230*20
-	dc.l	screen+64000*0+230*40
-	dc.l	screen+64000*1+230*40
-	dc.l	screen+64000*2+230*40
-	dc.l	screen+64000*3+230*40
-	dc.l	screen+64000*0+230*60
-	dc.l	screen+64000*1+230*60
-	dc.l	screen+64000*2+230*60
-	dc.l	screen+64000*3+230*60
-	dc.l	screen+64000*0+230*80
-	dc.l	screen+64000*1+230*80
-	dc.l	screen+64000*2+230*80
-	dc.l	screen+64000*3+230*80
-	dc.l	screen+64000*0+230*100
-	dc.l	screen+64000*1+230*100
-	dc.l	screen+64000*2+230*100
-	dc.l	screen+64000*3+230*100
-	dc.l	screen+64000*0+230*120
-	dc.l	screen+64000*1+230*120
-	dc.l	screen+64000*2+230*120
-	dc.l	screen+64000*3+230*120
-	dc.l	screen+64000*0+230*140
-	dc.l	screen+64000*1+230*140
-	dc.l	screen+64000*2+230*140
-	dc.l	screen+64000*3+230*140
-	dc.l	screen+64000*0+230*160
-	dc.l	screen+64000*1+230*160
-	dc.l	screen+64000*2+230*160
-	dc.l	screen+64000*3+230*160
-	dc.l	screen+64000*0+230*180
-	dc.l	screen+64000*1+230*180
-	dc.l	screen+64000*2+230*180
-	dc.l	screen+64000*3+230*180
-	dc.l	screen+64000*0+230*200
-	dc.l	screen+64000*1+230*200
-	dc.l	screen+64000*2+230*200
-	dc.l	screen+64000*3+230*200
-	dc.l	screen+64000*0+230*220
-	dc.l	screen+64000*1+230*220
-	dc.l	screen+64000*2+230*220
-	dc.l	screen+64000*3+230*220
-	dc.l	screen+64000*0+230*240
-	dc.l	screen+64000*1+230*240
-	dc.l	screen+64000*2+230*240
-	dc.l	screen+64000*3+230*240
-	dc.l	screen+64000*0+230*260
-	dc.l	screen+64000*1+230*260
-	dc.l	screen+64000*2+230*260
-	dc.l	screen+64000*3+230*260
-	dc.l	screen+64000*0+230*280
-	dc.l	screen+64000*1+230*280
-	dc.l	screen+64000*2+230*280
-	dc.l	screen+64000*3+230*280
+	dc.l	screen+64400*0
+	dc.l	screen+64400*1
+	dc.l	screen+64400*2
+	dc.l	screen+64400*3
+	dc.l	screen+64400*0+230*20
+	dc.l	screen+64400*1+230*20
+	dc.l	screen+64400*2+230*20
+	dc.l	screen+64400*3+230*20
+	dc.l	screen+64400*0+230*40
+	dc.l	screen+64400*1+230*40
+	dc.l	screen+64400*2+230*40
+	dc.l	screen+64400*3+230*40
+	dc.l	screen+64400*0+230*60
+	dc.l	screen+64400*1+230*60
+	dc.l	screen+64400*2+230*60
+	dc.l	screen+64400*3+230*60
+	dc.l	screen+64400*0+230*80
+	dc.l	screen+64400*1+230*80
+	dc.l	screen+64400*2+230*80
+	dc.l	screen+64400*3+230*80
+	dc.l	screen+64400*0+230*100
+	dc.l	screen+64400*1+230*100
+	dc.l	screen+64400*2+230*100
+	dc.l	screen+64400*3+230*100
+	dc.l	screen+64400*0+230*120
+	dc.l	screen+64400*1+230*120
+	dc.l	screen+64400*2+230*120
+	dc.l	screen+64400*3+230*120
+	dc.l	screen+64400*0+230*140
+	dc.l	screen+64400*1+230*140
+	dc.l	screen+64400*2+230*140
+	dc.l	screen+64400*3+230*140
+	dc.l	screen+64400*0+230*160
+	dc.l	screen+64400*1+230*160
+	dc.l	screen+64400*2+230*160
+	dc.l	screen+64400*3+230*160
+	dc.l	screen+64400*0+230*180
+	dc.l	screen+64400*1+230*180
+	dc.l	screen+64400*2+230*180
+	dc.l	screen+64400*3+230*180
+	dc.l	screen+64400*0+230*200
+	dc.l	screen+64400*1+230*200
+	dc.l	screen+64400*2+230*200
+	dc.l	screen+64400*3+230*200
+	dc.l	screen+64400*0+230*220
+	dc.l	screen+64400*1+230*220
+	dc.l	screen+64400*2+230*220
+	dc.l	screen+64400*3+230*220
+	dc.l	screen+64400*0+230*240
+	dc.l	screen+64400*1+230*240
+	dc.l	screen+64400*2+230*240
+	dc.l	screen+64400*3+230*240
+	dc.l	screen+64400*0+230*260
+	dc.l	screen+64400*1+230*260
+	dc.l	screen+64400*2+230*260
+	dc.l	screen+64400*3+230*260
 	dc.l	0
 font	equ	*-32*8
 	incbin	"font.bin"
@@ -1879,6 +1935,7 @@ oldres: ds.w 1
 screenad1:ds.w 1
 screenad2:ds.l 1
 screenadr:ds.l 1
+logbase:	ds.l	1	;screen where to put scroll
 black:	ds.l 8
 nextscrn:
 	ds.l	1	;points to next screenadress to be used

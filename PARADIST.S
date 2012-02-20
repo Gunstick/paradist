@@ -641,10 +641,10 @@ indistcalcloop:
 ;	dcb	$4e71,41-4-33
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
@@ -1255,10 +1255,10 @@ copydistscroll:
 ;	move.b	#$77,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,8
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
@@ -1280,10 +1280,10 @@ scrollcpy:
 
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$77,$ffff8240.w
-	move.b	#7,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$77,$ffff8240.w
+;	move.b	#7,$ffff8240.w
 	dcb	$4e71,6
 ;	NOT.W	$FFFF8240.W
    	jmp	(a0)		;(a5)+ -> (a6)   uses d1-a1
@@ -1293,9 +1293,10 @@ endcpy:
 	move.b	#0,$ffff8260.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
+	dcb	$4e71,4
 	lea	230(a6),a6
 	lea	linebuffend-linebuffbegin(a4),a4
 	dbf	d0,scrollcpy
@@ -1497,7 +1498,7 @@ nexthextodez:
 	;The 26 copyroutines
 cpyjsr:
 	rept	30
-;	dc.l	cpy21
+;	dc.l	cpy00
 	endr
 	dc.l	cpy00,cpy01,cpy02,cpy03,cpy04
 	dc.l	cpy05,cpy06,cpy07,cpy08,cpy09
@@ -1520,16 +1521,16 @@ c8	equr	a0
 
 swnodigi	MACRO
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#$0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#$0,$ffff8240.w
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 	ENDM
@@ -1537,27 +1538,27 @@ swnodigi	MACRO
 swdigi	MACRO
 	dcb	$4e71,22	;digi
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#$0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#$0,$ffff8240.w
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 	ENDM
 cpy00:	;7,9,9,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -1594,14 +1595,13 @@ cpy00:	;7,9,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 
@@ -1633,13 +1633,13 @@ cpy00:	;7,9,9,9,9,9
 	bra	endcpy
 
 cpy01:	;2+5,7,7,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -1677,27 +1677,26 @@ cpy01:	;2+5,7,7,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy02:	;4+3,9,9,9,9,9
 
 
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -1735,27 +1734,26 @@ cpy02:	;4+3,9,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy03:	;6+1,9,9,9,9,9
 
 
 
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -1793,25 +1791,24 @@ cpy03:	;6+1,9,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy04:	;8,8,9,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -1849,24 +1846,23 @@ cpy04:	;8,8,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy05:	;9,1+6,9,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -1904,24 +1900,23 @@ cpy05:	;9,1+6,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy06:	;9,3+4,9,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -1959,24 +1954,23 @@ cpy06:	;9,3+4,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy07:	;9,5+2,9,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2014,24 +2008,23 @@ cpy07:	;9,5+2,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
 ;	dcb	$4e71,4
-	dcb	$4e71,6
-	dcb	$4e71,3
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy08:	;9,7,9,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2069,22 +2062,22 @@ cpy08:	;9,7,9,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy09:	;9,9,7,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2122,22 +2115,22 @@ cpy09:	;9,9,7,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy10:	;9,9,2+5,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2173,22 +2166,22 @@ cpy10:	;9,9,2+5,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy11:	;9,9,4+3,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2226,21 +2219,21 @@ cpy11:	;9,9,4+3,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy12:	;9,9,6+1,9,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2279,22 +2272,22 @@ cpy12:	;9,9,6+1,9,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy13:	;9,9,8,8,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2331,21 +2324,21 @@ cpy13:	;9,9,8,8,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy14:	;9,9,9,1+6,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2382,21 +2375,21 @@ cpy14:	;9,9,9,1+6,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy15:	;9,9,9,3+4,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2435,21 +2428,21 @@ cpy15:	;9,9,9,3+4,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy16:	;9,9,9,5+2,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2488,21 +2481,21 @@ cpy16:	;9,9,9,5+2,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy17:	;9,9,9,7,9,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2539,21 +2532,21 @@ cpy17:	;9,9,9,7,9,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 cpy18:	;9,9,9,9,7,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2592,22 +2585,22 @@ cpy18:	;9,9,9,9,7,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy19:	;9,9,9,9,2+5,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2646,22 +2639,22 @@ cpy19:	;9,9,9,9,2+5,9
 	;NODIGI+RETURN
 	dcb	$4e71,6
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy20:	;9,9,9,9,4+3,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2698,24 +2691,24 @@ cpy20:	;9,9,9,9,4+3,9
 	;NODIGI+RETURN
 	dcb	$4e71,6+1
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 
 
 cpy21:	;9,9,9,9,6+1,9
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2754,22 +2747,22 @@ cpy21:	;9,9,9,9,6+1,9
 	;NODIGI+RETURN
 	dcb	$4e71,5
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy22:	;9,9,9,9,8,8
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2808,22 +2801,22 @@ cpy22:	;9,9,9,9,8,8
 	;NODIGI+RETURN
 	dcb	$4e71,5
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy23:	;9,9,9,9,8,8
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2862,22 +2855,22 @@ cpy23:	;9,9,9,9,8,8
 	;NODIGI+RETURN
 	dcb	$4e71,5
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 cpy24:	;9,9,9,9,9,3+4
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2914,24 +2907,24 @@ cpy24:	;9,9,9,9,9,3+4
 	;NODIGI+RETURN
 	dcb	$4e71,1+6+4
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 
 
 
 
 cpy25:	;9,9,9,9,9,5+2
-;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
-;	move.b	#0,$ffff8260.w
-	move.b	#$70,$ffff8240.w
-	move.b	#0,$ffff8240.w
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	move.b	#$70,$ffff8240.w
+;	move.b	#0,$ffff8240.w
 ;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
 	dcb	$4e71,9
- 	move.b	#0,$ffff8260.w	;Open left border
+ 	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
@@ -2970,11 +2963,11 @@ cpy25:	;9,9,9,9,9,5+2
 	;NODIGI+RETURN
 	dcb	$4e71,1+4
 	dcb	$4e71,17	;mdist
-;	move.b	#0,$ffff820a.w	;Open right border
-;	move.b	#2,$ffff820a.w
-	move.b	#$7,$ffff8240.w
-	move.b	#0,$ffff8240.w
-	dcb	$4e71,9
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+;	move.b	#$7,$ffff8240.w
+;	move.b	#0,$ffff8240.w
+	dcb	$4e71,5
 	bra	endcpy
 	;
 	;**********************************************************

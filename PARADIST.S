@@ -2,11 +2,10 @@ backport	equ	10
 overscan:equ 0
 ; Double Megadistorter by Gunstick   (c) ULM 1990
 ; we know! it's long, but it works ! And it's from ULM !!!
-
 parallax	equ	0
 parallay	equ	0
 
-bus	equ	10
+bus	equ	0
 
 
 
@@ -232,6 +231,36 @@ do_mdist02	MACRO
 	movem.l	(a0),d4/d5/d6/d7
 
 
+digi1	MACRO
+	moveq	#-1,d6
+	move.b	(a7),d6
+	add.w	d6,d6
+;	add.w	(a6,d6),d7
+	andi.w	#$ff*4,d7
+	
+;	move.l	(a6,d7),d6
+	not.w	$ffff8240.w
+	nop
+	not.w	$ffff8240.w
+	movep.l	d6,$ffff8800-512-downthere(a6)		;~7
+	ENDM
+	
+
+digi2	MACRO
+	moveq	#-1,d6		;~1
+	move.b	(a7)+,d6	;~2
+	add.w	d6,d6		;~1
+;	add.w	2(a6,d6),d7	;~4
+	andi.w	#$ff*4,d7	;~2
+	
+;	move.l	(a6,d7),d6	;~5
+	not.w	$ffff8240.w
+	nop
+	not.w	$ffff8240.w
+	movep.l	d6,$ffff8800-512-downthere(a6)		;~7
+	ENDM
+	
+
 screen2:
 
 ;free d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 a3 a4 a5 a6    usp
@@ -240,11 +269,27 @@ screen2:
 	move.l	sp,stack
 ;	clr.b	lowbyte
 
+	ifeq	bus
 	moveq	#57,d0
 	lea	endprg,a0
 memtest:
 	move.l	#-1,(a0)+
 	dbf	d0,memtest
+	endc
+	;prepare digisound
+downthere	equ	$500
+	move.w	#(256+512/4)-1,d0
+	lea	domino,a0
+	lea	downthere,a1
+prepdigi:
+	move.l	(a0),d1
+	move.l	(a1),(a0)+
+	move.l	d1,(a1)+
+	dbf	d0,prepdigi
+	lea	downthere+512,a6
+	lea	digisound,a7
+	move.b	(a7)+,d7
+	lsl.w	#2,d7	
 	
 	;**********************************************************
 	;	Distorted scroller by Gunstick
@@ -371,8 +416,8 @@ firsttopwait:
 looop:
 	bsr	waitvbl
 
-	movem.l black,d0-d7
-	movem.l d0-d7,$ffff8240.w
+	movem.l black,d0-d6/a0
+	movem.l d0-d6/a0,$ffff8240.w
 
 ;blaf	equ	174-55
 blaf	equ	174
@@ -382,7 +427,8 @@ opentopwait:
 	dcb	$4e71,90+122-16-blaf
 
 loop:
-	dcb	$4e71,blaf-8*0
+	dcb	$4e71,blaf-4
+	move.w	d7,digswitch
 	movem.l hwpalette,d2-d7/a1-a2
 	move.l	a1,usp
 	lea	$ffff8209.w,a1
@@ -420,7 +466,7 @@ sync:
 
 	bra	intoall
 
-switchloop:
+switchloop: 
 ;	move.b	#2,$ffff8260.w	;GunsticK's right border end switch
 ;	move.b	#0,$ffff8260.w
 	tst.b	(a0)+
@@ -556,17 +602,19 @@ disthigh	equ	20
 ;copy (disthigh-distspeed)/2 registers
 	movem.l	disttable+distspeed*2,d_0/d_1/d_2/d_3/a_0/a_1/a_2	;copy disttab
 	movem.l	d_0/d_1/d_2/d_3/a_0/a_1/a_2,disttable
-	move.l	disttable+distspeed*2+7*4,disttable+7*4
 	
 
+	move.l	disttable+distspeed*2+7*4,disttable+7*4
 	dcb	$4e71,25-5
+
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	$4e71,6
 	do_mdist
-	
-	dcb	$4e71,27
+	move.w	digswitch,d7
+	digi2
+	dcb	$4e71,27-22-4
 
 	lea	disttable+disthigh*2-distspeed*2,a_1	;position to write new
 	move.l	distwaveptr,a_0		;position in the actual wave
@@ -577,8 +625,9 @@ disthigh	equ	20
 
 distwaveread:
 	;free: d4-d7/a2/a4-a6/usp
+	dcb	$4e71,25-22	;digi
+	digi1
 	calc_mdist2
-	dcb	$4e71,25	;digi
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	bra.s	cont
@@ -614,7 +663,8 @@ _notnextwavetab:
 	dbf	d_0,distwaveread	;~12/16
 
 	;free: d1-d2/d4-d7/a0-a6/usp
-	dcb	$4e71,24	;digi
+	digi2
+	dcb	$4e71,24-22	;digi
 	calc_mdist2
 
 
@@ -643,10 +693,33 @@ distcalcloop:	;(~12)
 	add.w	#16,d_2		;~8	
 	move.w	d_2,(a_0)	;~8	;write back new shift
 	dcb	$4e71,4-2
-	moveq	#7,d_2
+	moveq	#1,d_2
 noshift:
 	nop
 	;free: d0/d3-d7/a1-a2/a4-a6/usp  cpy:d0/d3/a1/a2
+	digi1
+	dcb	$4e71,25-22	;digi
+	calc_mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8-2
+	do_mdist
+	dcb	$4e71,41
+	dcb	$4e71,25	;digi
+	calc_mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8-2
+	do_mdist
+	dcb	$4e71,41
+	digi2
+	dcb	$4e71,25-22	;digi
+	calc_mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8-2
+	do_mdist
+	dcb	$4e71,41
 	dcb	$4e71,25	;digi
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -655,6 +728,9 @@ noshift:
 	do_mdist
 	dcb	$4e71,41-4
 	dbf	d_2,noshift
+
+
+
 	
 indistcalcloop:
 	;free: d0/d3-d7/a1-a2/a4-a6/usp  cpy:d0/d3/a1/a2
@@ -676,7 +752,8 @@ indistcalcloop:
 
 
 	;free: d0-a6/usp  
-	dcb	$4e71,25	;digi
+	dcb	$4e71,25-22	;digi
+	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -731,7 +808,8 @@ vorwaerts:
 	move.w	d_2,(a_0)	;~8 write back new shift
 	move.l	textptr-shift(a_0),a_1	;~16
 	dcb	$4e71,2
-	dcb	$4e71,25	;digi
+	dcb	$4e71,25-22	;digi
+	digi1
 	calc_mdist
 
 
@@ -828,7 +906,8 @@ call_shifter:
 	lea	26*8(a_1),a_1	;~8
 	dcb	$4e71,5
 ***************************************************
-	dcb	$4e71,25
+	dcb	$4e71,25-22
+	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -896,7 +975,8 @@ call_shifter:
 	dcb	$4e71,8-3
 
 	;---------------------------------------
-	dcb	$4e71,25
+	dcb	$4e71,25-22
+	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -963,7 +1043,8 @@ call_shifter:
 	dcb	$4e71,8-3
 
 	;---------------------------------------
-	dcb	$4e71,25
+	dcb	$4e71,25-22
+	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -1056,7 +1137,8 @@ rueckwaerts:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
 	dcb	$4e71,2+7
-	dcb	$4e71,25	;digi
+	dcb	$4e71,25-22	;digi
+	digi1
 	calc_mdist
 
 
@@ -1159,7 +1241,8 @@ copydistscroll:
 	
 	
 	dcb	$4e71,21-1
-	dcb	$4e71,22	;digi
+;	dcb	$4e71,22	;digi
+	digi2
 	lea	buffer,a6
 	move.l	a6,usp
 	calc_mdist
@@ -1185,8 +1268,9 @@ scrollcpy:
 	move.l	(a6,d1),goto	;;a1
 ;;	move.l	d0,a0		;;weg
 ;;	nop
-	lea	mul208,a6	;voltab (.w ?)
-	dcb	$4e71,22	;digi
+	lea	downthere+512,a6
+;	dcb	$4e71,22	;digi
+	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -1229,7 +1313,8 @@ c9	equr	a5
 c10	equr	a1
 
 	;let's copy the rest
-	move.w	#7,count
+	clr.w	digswitch
+	move.w	#7-5,count
 scrollcpy2:
 	move.w	shift-buffer(a6),d1
 	mulu	#208,d1
@@ -1238,10 +1323,13 @@ scrollcpy2:
 	lea	cpyjsr2,a1
 	move.l	(a1,d1),a1
 	
-	lea	mul208,a6	;voltab (.w ?)
-	not.w	$ffff8240.w
-	not.w	$ffff8240.w
-	dcb	$4e71,22-8	;digi
+	lea	downthere+512,a6	;voltab (.w ?)
+	not.w	digswitch
+	bne.s	cpy_d2
+	digi1
+   	jmp	(a1)		;(a2)+ -> (a0)   uses d1-a1
+cpy_d2:
+	digi2
    	jmp	(a1)		;(a2)+ -> (a0)   uses d1-a1
 endcpy2:
 	move.l	usp,a6
@@ -1251,6 +1339,7 @@ endcpy2:
 	subq.w	#1,count
 	bne	scrollcpy2
 
+	lea	downthere+512,a6	;voltab (.w ?)
 
 	;**********************************************************
 	;buffercopy
@@ -1350,6 +1439,17 @@ notu:
 	cmpi.b	#57,d0
 	bne.s	no_key
 
+exit:
+	;restore digisound
+	move.w	#(256+512/4)-1,d0
+	lea	domino,a0
+	lea	downthere,a1
+restdigi:
+	move.l	(a0)+,(a1)+
+	dbf	d0,restdigi
+
+
+
 	movea.l stack,sp
 	move	(sp)+,sr
 	rts
@@ -1361,18 +1461,11 @@ codmod:
 	moveq	#0,d0
 	move.b	3(a3),d0
 	lsr.l	#1,d0
-	lea	str,a3
-	move.l	#"0000",-4(a3)
-	bsr	d0todeza3
-	pea	prt
-	move.w	#9,-(sp)
-;	 trap	 #1
-	addq.w	#6,sp
 
 ;--------------------------------------------------------------
 ;	bra	looop
-	movem.l black,d0-d7
-	movem.l d0-d7,$ffff8240.w
+	movem.l black,d0-d6/a0
+	movem.l d0-d6/a0,$ffff8240.w
 
 	move.l	mdistadjustptr,a4
 sss	equ	15
@@ -1429,8 +1522,8 @@ no_int:
 
 
 
-;	move.w	#911,$ffff8240.w
-	move.w	#$00,$ffff8240.w
+	move.w	#911,$ffff8240.w
+;	move.w	#$00,$ffff8240.w
 
 	bra	loop
 
@@ -1456,10 +1549,6 @@ opentopwait2:
 	move.b	#2,$ffff820a.w
 
 
-exit:
-	movea.l stack,sp
-	move	(sp)+,sr
-	rts
 
 d0todeza3:
 	movem.l d0-d1/a3,-(sp)
@@ -1874,14 +1963,19 @@ swnodigi	MACRO
 	do_mdist
 	ENDM
 
-swdigi	MACRO
-	dcb	$4e71,22	;digi
+swdigi1	MACRO
+	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
-;	move.b	#2,$ffff820a.w
-;	move.b	#$7,$ffff8240.w
-;	move.b	#$0,$ffff8240.w
+	dcb	$4e71,8-2
+	do_mdist
+	ENDM
+swdigi2	MACRO
+	digi2
+	calc_mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	(a1)+,$ffff820a.w
 	dcb	$4e71,8-2
 	do_mdist
 	ENDM
@@ -1900,7 +1994,7 @@ cpy00:	;7,9,9,9,9,9
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
 	move.l	(a2)+,4*19(a0)
-	swdigi
+	swdigi2
 	dcb	$4e71,2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*20(a0)
@@ -1911,7 +2005,7 @@ cpy00:	;7,9,9,9,9,9
 	dcb	$4e71,10-4
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*33(a0)
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,6-4
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -1945,7 +2039,7 @@ cpy01:	;2+5,7,7,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*10(a0)
 	;DIGI
 	move.l	(a2)+,4*17(a0)
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*18(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -1958,7 +2052,7 @@ cpy01:	;2+5,7,7,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*31(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*38(a0)
@@ -1994,7 +2088,7 @@ cpy02:	;4+3,9,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*8(a0)
 	;DIGI
 	move.l	(a2)+,4*15(a0)
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*16(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2007,7 +2101,7 @@ cpy02:	;4+3,9,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*29(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*36(a0)
@@ -2042,7 +2136,7 @@ cpy03:	;6+1,9,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*6(a0)
 	;DIGI
 	move.l	(a2)+,4*13(a0)
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*14(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2055,7 +2149,7 @@ cpy03:	;6+1,9,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*27(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*34(a0)
@@ -2091,7 +2185,7 @@ cpy04:	;8,8,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*4(a0)
 	;DIGI
 	move.l	(a2)+,4*11(a0)
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*12(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2104,7 +2198,7 @@ cpy04:	;8,8,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*25(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*32(a0)
@@ -2139,7 +2233,7 @@ cpy05:	;9,1+6,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*2(a0)
 	;DIGI
 	move.l	(a2)+,4*9(a0)
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*10(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2152,7 +2246,7 @@ cpy05:	;9,1+6,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*23(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*30(a0)
@@ -2188,7 +2282,7 @@ cpy06:	;9,3+4,9,9,9,9
 	nop
 	;DIGI
 	move.l	(a2)+,4*7(a0)
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*8(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2201,7 +2295,7 @@ cpy06:	;9,3+4,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*21(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*28(a0)
@@ -2237,7 +2331,7 @@ cpy07:	;9,5+2,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5,(a0)
 	dcb	$4e71,5-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*6(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2250,7 +2344,7 @@ cpy07:	;9,5+2,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*19(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*26(a0)
@@ -2286,7 +2380,7 @@ cpy08:	;9,7,9,9,9,9
 	movem.l		c0/c1/c2/c3,(a0)
 	dcb	$4e71,5-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2299,7 +2393,7 @@ cpy08:	;9,7,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*17(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*24(a0)
@@ -2334,7 +2428,7 @@ cpy09:	;9,9,7,9,9,9
 	movem.l		c0/c1,(a0)
 	dcb	$4e71,5-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*2(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2347,7 +2441,7 @@ cpy09:	;9,9,7,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*15(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*22(a0)
@@ -2380,7 +2474,7 @@ cpy10:	;9,9,2+5,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*45(a0)
 	dcb	$4e71,10-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*0(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -2393,7 +2487,7 @@ cpy10:	;9,9,2+5,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*13(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*20(a0)
@@ -2427,7 +2521,7 @@ cpy11:	;9,9,4+3,9,9,9
 	move.l	(a2)+,50*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	move.b	#2,$ffff820a.w
 	move.l	(a2)+,51*4(a0)
 	movem.l	(a2)+,c1/c2/c3/c4
@@ -2442,7 +2536,7 @@ cpy11:	;9,9,4+3,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*11(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*18(a0)
@@ -2475,7 +2569,7 @@ cpy12:	;9,9,6+1,9,9,9
 	move.l	(a2)+,48*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2
 	movem.l		c0/c1/c2,49*4(a0)
 	movem.l	(a2)+,c1/c2
@@ -2490,7 +2584,7 @@ cpy12:	;9,9,6+1,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*9(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*16(a0)
@@ -2524,7 +2618,7 @@ cpy13:	;9,9,8,8,9,9
 	move.l	(a2)+,46*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,47*4(a0)
@@ -2538,7 +2632,7 @@ cpy13:	;9,9,8,8,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*7(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*14(a0)
@@ -2571,7 +2665,7 @@ cpy14:	;9,9,9,1+6,9,9
 	move.l	(a2)+,44*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,45*4(a0)
@@ -2585,7 +2679,7 @@ cpy14:	;9,9,9,1+6,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*5(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
@@ -2618,7 +2712,7 @@ cpy15:	;9,9,9,3+4,9,9
 	move.l	(a2)+,42*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,43*4(a0)
 	movem.l	(a2)+,c0/c1
@@ -2633,7 +2727,7 @@ cpy15:	;9,9,9,3+4,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*3(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*10(a0)
@@ -2666,7 +2760,7 @@ cpy16:	;9,9,9,5+2,9,9
 	move.l	(a2)+,40*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,41*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3
@@ -2681,7 +2775,7 @@ cpy16:	;9,9,9,5+2,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*1(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*8(a0)
@@ -2714,7 +2808,7 @@ cpy17:	;9,9,9,7,9,9
 	move.l	(a2)+,38*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,39*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -2727,7 +2821,7 @@ cpy17:	;9,9,9,7,9,9
 	movem.l		c0/c1/c2/c3/c4/c5,(a0)
 	;DIGI
 	dcb	$4e71,10+5-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*6(a0)
@@ -2760,7 +2854,7 @@ cpy18:	;9,9,9,9,7,9
 	move.l	(a2)+,36*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,37*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -2775,7 +2869,7 @@ cpy18:	;9,9,9,9,7,9
 	movem.l		c0/c1/c2/c3,(a0)
 	;DIGI
 	dcb	$4e71,9-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*4(a0)
@@ -2809,7 +2903,7 @@ cpy19:	;9,9,9,9,2+5,9
 	move.l	(a2)+,34*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,35*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -2824,7 +2918,7 @@ cpy19:	;9,9,9,9,2+5,9
 	movem.l		c0/c1,(a0)
 	;DIGI
 	dcb	$4e71,9-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*2(a0)
@@ -2858,7 +2952,7 @@ cpy20:	;9,9,9,9,4+3,9
 	move.l	(a2)+,32*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,33*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -2871,7 +2965,7 @@ cpy20:	;9,9,9,9,4+3,9
 	movem.l		c0/c1/c2/c3/c4/c5,46*4(a0)
 	;DIGI
 	dcb	$4e71,1+6+7-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,(a0)
@@ -2907,7 +3001,7 @@ cpy21:	;9,9,9,9,6+1,9
 	move.l	(a2)+,30*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,31*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -2920,7 +3014,7 @@ cpy21:	;9,9,9,9,6+1,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,44*4(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0
 	movem.l		c0,51*4(a0)
@@ -2956,7 +3050,7 @@ cpy22:	;9,9,9,9,8,8
 	move.l	(a2)+,28*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,29*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -2969,7 +3063,7 @@ cpy22:	;9,9,9,9,8,8
 	movem.l		c0/c1/c2/c3/c4/c5/c6,42*4(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2
 	movem.l		c0/c1/c2,49*4(a0)
@@ -3005,7 +3099,7 @@ cpy23:	;9,9,9,9,8,8
 	move.l	(a2)+,26*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,27*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -3018,7 +3112,7 @@ cpy23:	;9,9,9,9,8,8
 	movem.l		c0/c1/c2/c3/c4/c5/c6,40*4(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,47*4(a0)
@@ -3054,7 +3148,7 @@ cpy24:	;9,9,9,9,9,3+4
 	move.l	(a2)+,24*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,25*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -3067,7 +3161,7 @@ cpy24:	;9,9,9,9,9,3+4
 	movem.l		c0/c1/c2/c3/c4/c5/c6,38*4(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,45*4(a0)
@@ -3103,7 +3197,7 @@ cpy25:	;9,9,9,9,9,5+2
 	move.l	(a2)+,22*4(a0)
 	dcb	$4e71,4-4
 	;DIGI
-	swdigi
+	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,23*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
@@ -3116,7 +3210,7 @@ cpy25:	;9,9,9,9,9,5+2
 	movem.l		c0/c1/c2/c3/c4/c5/c6,36*4(a0)
 	;DIGI
 	dcb	$4e71,10-4
-	swdigi
+	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,43*4(a0)
@@ -3138,14 +3232,293 @@ cpy25:	;9,9,9,9,9,5+2
 
 	section	data
 
+
+domino:
+	;This is the famous domino-table. Try to understand it !
+	dc.w	$0000,$0000,$0004,$0000,$0008,$0000,$0010,$0000,$0020,$0000,$0040,$0000,$0080,$0000,$0100,$0000
+	dc.w	$0200,$0000,$0300,$0000,$0380,$0000,$03C0,$0000,$03E0,$0000,$03F0,$0000,$03F8,$0000,$03FC,$0004
+	dc.w	$0004,$0008,$0004,$0010,$0004,$0020,$0004,$0040,$0004,$0080,$0004,$0100,$0004,$0200,$0004,$0300
+	dc.w	$0004,$0380,$0004,$03C0,$0004,$03E0,$0004,$03F0,$0004,$03F8,$0004,$03FC,$0008,$0008,$0010,$0008
+	dc.w	$0020,$0008,$0040,$0008,$0080,$0008,$0100,$0008,$0200,$0008,$0300,$0008,$0380,$0008,$03C0,$0008
+	dc.w	$03E0,$0008,$03F0,$0008,$03F8,$0008,$03FC,$0010,$0010,$0020,$0010,$0040,$0010,$0080,$0010,$0100
+	dc.w	$0010,$0200,$0010,$0300,$0010,$0380,$0010,$03C0,$0010,$03E0,$0010,$03F0,$0010,$03F8,$0010,$03FC
+	dc.w	$0020,$0020,$0040,$0020,$0080,$0020,$0100,$0020,$0200,$0020,$0300,$0020,$0380,$0020,$03C0,$0020
+	dc.w	$03E0,$0020,$03F0,$0020,$03F8,$0020,$03FC,$0040,$0040,$0080,$0040,$0100,$0040,$0200,$0040,$0300
+	dc.w	$0040,$0380,$0040,$03C0,$0040,$03E0,$0040,$03F0,$0040,$03F8,$0040,$03FC,$0080,$0080,$0100,$0080
+	dc.w	$0200,$0080,$0300,$0080,$0380,$0080,$03C0,$0080,$03E0,$0080,$03F0,$0080,$03F8,$0080,$03FC,$0100
+	dc.w	$0100,$0200,$0100,$0300,$0100,$0380,$0100,$03C0,$0100,$03E0,$0100,$03F0,$0100,$03F8,$0100,$03FC
+	dc.w	$0200,$0200,$0300,$0200,$0380,$0200,$03C0,$0200,$03E0,$0200,$03F0,$0200,$03F8,$0200,$03FC,$0300
+	dc.w	$0300,$0380,$0300,$03C0,$0300,$03E0,$0300,$03F0,$0300,$03F8,$0300,$03FC,$0380,$0380,$03C0,$0380
+	dc.w	$03E0,$0380,$03F0,$0380,$03F8,$0380,$03FC,$03C0,$03C0,$03E0,$03C0,$03F0,$03C0,$03F8,$03C0,$03FC
+	dc.w	$03E0,$03E0,$03F0,$03E0,$03F8,$03E0,$03FC,$03F0,$03F0,$03F8,$03F0,$03FC,$03F8,$03F8,$03FC,$03FC
+voltab:	
+;         Soundtable from 68000 ST-Magazin
+ dc.w $0800,$0900
+ dc.w $0801,$0900
+ dc.w $0802,$0900
+ dc.w $0801,$0901
+ dc.w $0802,$0901
+ dc.w $0801,$0902
+ dc.w $0802,$0902
+ dc.w $0803,$0903
+ dc.w $0804,$0901
+ dc.w $0805,$0900
+ dc.w $0805,$0901
+ dc.w $0805,$0902
+ dc.w $0805,$0902
+ dc.w $0806,$0900
+ dc.w $0806,$0901
+ dc.w $0805,$0903
+ dc.w $0806,$0902
+ dc.w $0807,$0900
+ dc.w $0807,$0901
+ dc.w $0806,$0904
+ dc.w $0806,$0904
+ dc.w $0806,$0904
+ dc.w $0806,$0905
+ dc.w $0806,$0905
+ dc.w $0806,$0905
+ dc.w $0806,$0906
+ dc.w $0806,$0906
+ dc.w $0806,$0906
+ dc.w $0807,$0905
+ dc.w $0807,$0905
+ dc.w $0807,$0906
+ dc.w $0807,$0906
+ dc.w $0807,$0906
+ dc.w $0807,$0906
+ dc.w $0807,$0907
+ dc.w $0807,$0907
+ dc.w $0807,$0907
+ dc.w $0807,$0907
+ dc.w $0808,$0906
+ dc.w $0808,$0906
+ dc.w $0808,$0906
+ dc.w $0808,$0906
+ dc.w $0808,$0907
+ dc.w $0808,$0907
+ dc.w $0808,$0907
+ dc.w $0808,$0907
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0907
+ dc.w $0809,$0907
+ dc.w $0809,$0907
+ dc.w $0809,$0907
+ dc.w $080A,$0902
+ dc.w $080A,$0903
+ dc.w $080A,$0904
+ dc.w $080A,$0904
+ dc.w $080A,$0904
+ dc.w $080A,$0905
+ dc.w $080A,$0905
+ dc.w $080A,$0906
+ dc.w $080A,$0906
+ dc.w $080A,$0906
+ dc.w $080A,$0906
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0908
+ dc.w $080A,$0908
+ dc.w $080B,$0904
+ dc.w $080B,$0904
+ dc.w $080B,$0905
+ dc.w $080B,$0905
+ dc.w $080B,$0905
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080C,$0900
+ dc.w $080C,$0901
+ dc.w $080C,$0902
+ dc.w $080C,$0903
+ dc.w $080C,$0903
+ dc.w $080C,$0904
+ dc.w $080C,$0904
+ dc.w $080C,$0904
+ dc.w $080C,$0905
+ dc.w $080C,$0905
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080D,$0900
+ dc.w $080D,$0901
+ dc.w $080D,$0901
+ dc.w $080D,$0902
+ dc.w $080D,$0902
+ dc.w $080D,$0903
+ dc.w $080D,$0903
+ dc.w $080D,$0904
+ dc.w $080D,$0904
+ dc.w $080D,$0905
+ dc.w $080D,$0905
+ dc.w $080D,$0906
+ dc.w $080D,$0906
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080E,$0906
+ dc.w $080E,$0906
+ dc.w $080E,$0907
+ dc.w $080E,$0907
+ dc.w $080E,$0907
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0909
+ dc.w $080E,$0909
+ dc.w $080E,$0909
+ dc.w $080E,$090A
+ 
+	even
+	dc.b	0
+	dc.b	$a0
+digisound:
+	incbin	"includes\telgraph.dmn"
+
+
 	;**********************************************************
 	;	Distorted scroller by Gunstick
-
-
-digi:
-;	incbin	"includes\telgraph.dmn"
-
-
 
 
 
@@ -3742,6 +4115,7 @@ oldres: ds.w 1
 screenad1:ds.w 1
 screenad2:ds.l 1
 screenadr:ds.l 1
+digswitch:	ds.w	1	;use digi1 or digi2
 logbase:	ds.l	1	;screen where to put scroll
 tabentry:
 	ds.l	1	;for hwscroll
@@ -3800,6 +4174,13 @@ endprg:
 	end
 
 
+
+
+
+
+
+
+
 screen:
 	;************** Digiplayer by GunsticK
 	;init
@@ -3812,13 +4193,13 @@ loop:
 	bne	exit
 
 	;************** Domino Digiplayer by GunsticK
-	moveq	#-1,d0		;~1
-	move.b	(a3),d0		;~2
-	add.w	d0,d0		;~1
-	add.w	(a4,d0),d3	;~4
-	andi.w	#$ff*4,d3	;~2
+	moveq	#-1,d0
+	move.b	(a3),d0
+	add.w	d0,d0
+	add.w	(a4,d0),d3
+	andi.w	#$ff*4,d3
 	
-	move.l	(a4,d3),d0	;~5
+	move.l	(a4,d3),d0
 	movep.l	d0,(a5)		;~7
 
 	not.w	$ffff8240.w
@@ -3877,6 +4258,286 @@ pal:
 
 
 entrylen = 4
+old:
+ dc.w entrylen*$00,entrylen*$01,entrylen*$02,entrylen*$04
+ dc.w entrylen*$08,entrylen*$10,entrylen*$20,entrylen*$40
+ dc.w entrylen*$80,entrylen*$C0,entrylen*$E0,entrylen*$F0
+ dc.w entrylen*$F8,entrylen*$FC,entrylen*$FE,entrylen*$FF
+;This is the famous domino-table. Try to understand it !
+	dc.w	$0000,$0000,$0004,$0000,$0008,$0000,$0010,$0000,$0020,$0000,$0040,$0000,$0080,$0000,$0100,$0000
+	dc.w	$0200,$0000,$0300,$0000,$0380,$0000,$03C0,$0000,$03E0,$0000,$03F0,$0000,$03F8,$0000,$03FC,$0004
+	dc.w	$0004,$0008,$0004,$0010,$0004,$0020,$0004,$0040,$0004,$0080,$0004,$0100,$0004,$0200,$0004,$0300
+	dc.w	$0004,$0380,$0004,$03C0,$0004,$03E0,$0004,$03F0,$0004,$03F8,$0004,$03FC,$0008,$0008,$0010,$0008
+	dc.w	$0020,$0008,$0040,$0008,$0080,$0008,$0100,$0008,$0200,$0008,$0300,$0008,$0380,$0008,$03C0,$0008
+	dc.w	$03E0,$0008,$03F0,$0008,$03F8,$0008,$03FC,$0010,$0010,$0020,$0010,$0040,$0010,$0080,$0010,$0100
+	dc.w	$0010,$0200,$0010,$0300,$0010,$0380,$0010,$03C0,$0010,$03E0,$0010,$03F0,$0010,$03F8,$0010,$03FC
+	dc.w	$0020,$0020,$0040,$0020,$0080,$0020,$0100,$0020,$0200,$0020,$0300,$0020,$0380,$0020,$03C0,$0020
+	dc.w	$03E0,$0020,$03F0,$0020,$03F8,$0020,$03FC,$0040,$0040,$0080,$0040,$0100,$0040,$0200,$0040,$0300
+	dc.w	$0040,$0380,$0040,$03C0,$0040,$03E0,$0040,$03F0,$0040,$03F8,$0040,$03FC,$0080,$0080,$0100,$0080
+	dc.w	$0200,$0080,$0300,$0080,$0380,$0080,$03C0,$0080,$03E0,$0080,$03F0,$0080,$03F8,$0080,$03FC,$0100
+	dc.w	$0100,$0200,$0100,$0300,$0100,$0380,$0100,$03C0,$0100,$03E0,$0100,$03F0,$0100,$03F8,$0100,$03FC
+	dc.w	$0200,$0200,$0300,$0200,$0380,$0200,$03C0,$0200,$03E0,$0200,$03F0,$0200,$03F8,$0200,$03FC,$0300
+	dc.w	$0300,$0380,$0300,$03C0,$0300,$03E0,$0300,$03F0,$0300,$03F8,$0300,$03FC,$0380,$0380,$03C0,$0380
+	dc.w	$03E0,$0380,$03F0,$0380,$03F8,$0380,$03FC,$03C0,$03C0,$03E0,$03C0,$03F0,$03C0,$03F8,$03C0,$03FC
+	dc.w	$03E0,$03E0,$03F0,$03E0,$03F8,$03E0,$03FC,$03F0,$03F0,$03F8,$03F0,$03FC,$03F8,$03F8,$03FC,$03FC
+voltab:	
+;         Soundtable from 68000 ST-Magazin
+ dc.w $0800,$0900
+ dc.w $0801,$0900
+ dc.w $0802,$0900
+ dc.w $0801,$0901
+ dc.w $0802,$0901
+ dc.w $0801,$0902
+ dc.w $0802,$0902
+ dc.w $0803,$0903
+ dc.w $0804,$0901
+ dc.w $0805,$0900
+ dc.w $0805,$0901
+ dc.w $0805,$0902
+ dc.w $0805,$0902
+ dc.w $0806,$0900
+ dc.w $0806,$0901
+ dc.w $0805,$0903
+ dc.w $0806,$0902
+ dc.w $0807,$0900
+ dc.w $0807,$0901
+ dc.w $0806,$0904
+ dc.w $0806,$0904
+ dc.w $0806,$0904
+ dc.w $0806,$0905
+ dc.w $0806,$0905
+ dc.w $0806,$0905
+ dc.w $0806,$0906
+ dc.w $0806,$0906
+ dc.w $0806,$0906
+ dc.w $0807,$0905
+ dc.w $0807,$0905
+ dc.w $0807,$0906
+ dc.w $0807,$0906
+ dc.w $0807,$0906
+ dc.w $0807,$0906
+ dc.w $0807,$0907
+ dc.w $0807,$0907
+ dc.w $0807,$0907
+ dc.w $0807,$0907
+ dc.w $0808,$0906
+ dc.w $0808,$0906
+ dc.w $0808,$0906
+ dc.w $0808,$0906
+ dc.w $0808,$0907
+ dc.w $0808,$0907
+ dc.w $0808,$0907
+ dc.w $0808,$0907
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0906
+ dc.w $0809,$0907
+ dc.w $0809,$0907
+ dc.w $0809,$0907
+ dc.w $0809,$0907
+ dc.w $080A,$0902
+ dc.w $080A,$0903
+ dc.w $080A,$0904
+ dc.w $080A,$0904
+ dc.w $080A,$0904
+ dc.w $080A,$0905
+ dc.w $080A,$0905
+ dc.w $080A,$0906
+ dc.w $080A,$0906
+ dc.w $080A,$0906
+ dc.w $080A,$0906
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0907
+ dc.w $080A,$0908
+ dc.w $080A,$0908
+ dc.w $080B,$0904
+ dc.w $080B,$0904
+ dc.w $080B,$0905
+ dc.w $080B,$0905
+ dc.w $080B,$0905
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0906
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0907
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0908
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080B,$0909
+ dc.w $080C,$0900
+ dc.w $080C,$0901
+ dc.w $080C,$0902
+ dc.w $080C,$0903
+ dc.w $080C,$0903
+ dc.w $080C,$0904
+ dc.w $080C,$0904
+ dc.w $080C,$0904
+ dc.w $080C,$0905
+ dc.w $080C,$0905
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0906
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0907
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0908
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$0909
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080C,$090A
+ dc.w $080D,$0900
+ dc.w $080D,$0901
+ dc.w $080D,$0901
+ dc.w $080D,$0902
+ dc.w $080D,$0902
+ dc.w $080D,$0903
+ dc.w $080D,$0903
+ dc.w $080D,$0904
+ dc.w $080D,$0904
+ dc.w $080D,$0905
+ dc.w $080D,$0905
+ dc.w $080D,$0906
+ dc.w $080D,$0906
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0907
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0908
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$0909
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080D,$090A
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080C,$090C
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090B
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080D,$090C
+ dc.w $080E,$0906
+ dc.w $080E,$0906
+ dc.w $080E,$0907
+ dc.w $080E,$0907
+ dc.w $080E,$0907
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0908
+ dc.w $080E,$0909
+ dc.w $080E,$0909
+ dc.w $080E,$0909
+ dc.w $080E,$090A
  
 	even
 digi:
@@ -3895,4 +4556,18 @@ screenad1:	ds.l	1
 
 screenmem:	ds.l	14300
 bss_end:			;here ends the bss
+	end
+
+rt:			;here starts the bss
+
+stack:		ds.l	1
+screenad1:	ds.l	1
+
+
+screenmem:	ds.l	14300
+bss_end:			;here ends the bss
+	end
+
+bss_end:			;here ends the bss
+	end
 

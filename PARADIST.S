@@ -78,7 +78,7 @@ alles:
 
 	pea	message
 	move.w	#9,-(sp)
-	trap	#1
+;	trap	#1
 	addq.w	#6,sp
 
 	bsr	psginit
@@ -293,7 +293,7 @@ opentopwait:
 	dbra	d0,opentopwait
 	dcb	$4e71,196-72-2
 	move.b	#0,$ffff820a.w
-	move.w	#$007,$ffff8240.w
+;	move.w	#$007,$ffff8240.w
 	dcb	$4e71,8
 	move.b	#2,$ffff820a.w
 ;ULM Hardware Scrolling PART 2
@@ -428,7 +428,8 @@ cont6:
 	dcb	$4e71,5
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -461,7 +462,8 @@ disthigh	equ	20
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -493,7 +495,8 @@ cont:
 	dcb	$4e71,3
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -528,7 +531,8 @@ _notnextwavetab:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -561,7 +565,8 @@ noshift:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -577,7 +582,8 @@ indistcalcloop:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -599,7 +605,8 @@ indistcalcloop:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -634,17 +641,67 @@ indistcalcloop:
 ;	dcb	$4e71,41-4-33
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
+;	move.b	#0,$ffff820a.w	;Open right border
+;	move.b	#2,$ffff820a.w
+	move.b	#$7,$ffff8240.w
+	move.b	#0,$ffff8240.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+; 	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+
+	bra	copydistscroll
+
+	rept 34
+	dcb	$4e71,41
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+	endr
+
+	dcb	$4e71,41
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#0,$ffff820a.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+	move.b	#2,$ffff820a.w
+
+	dcb	$4e71,41-4
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
 
-	rept 1    ;35
+	rept	7
 	dcb	$4e71,41
 	dcb	$4e71,25	;digi
 	dcb	$4e71,17	;mdist
@@ -655,7 +712,8 @@ indistcalcloop:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -679,7 +737,8 @@ indistcalcloop:
 overscanloop:
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -716,7 +775,8 @@ cont2:
 	dcb	$4e71,5
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -781,7 +841,8 @@ _nottextend:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -820,7 +881,8 @@ call_shifter:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -864,7 +926,8 @@ call_shifter:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -898,7 +961,8 @@ call_shifter:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -941,7 +1005,8 @@ call_shifter:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -975,7 +1040,8 @@ call_shifter:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -1018,7 +1084,8 @@ call_shifter:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -1091,7 +1158,8 @@ cont5:
 	dcb	$4e71,5
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -1133,7 +1201,8 @@ _rueckbufok:
 	dcb	$4e71,8
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d3,$ffff824e.w	;mdist
@@ -1177,7 +1246,24 @@ copydistscroll:
 	add.l	#6*160+230*(280-20),a6	;for hwscroll
 	lea	buffer,a4
 	moveq	#18,d0		;scrollhigh:18
-	not	$ffff8240.w
+
+	dcb	$4e71,25
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+;	move.b	#0,$ffff820a.w	;Open right border
+;	move.b	#2,$ffff820a.w
+	move.b	#$70,$ffff8240.w
+	move.b	#0,$ffff8240.w
+	dcb	$4e71,8
+	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+	move.b	#0,$ffff8260.w
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
+ 	move.b	#2,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
+
+
 scrollcpy:
 	move.w	shift-buffer(a4),d1
 	mulu	#208,d1
@@ -1190,8 +1276,17 @@ scrollcpy:
 ;	move.l	a5,a6
 
 
-	jmp	(a0)		;(a5)+ -> (a6)   uses d1-a1
+	dcb	$4e71,25	;digi
+	dcb	$4e71,17	;mdist
+;	move.b	#0,$ffff820a.w	;Open right border
+;	move.b	#2,$ffff820a.w
+	move.b	#$70,$ffff8240.w
+	move.b	#0,$ffff8240.w
+	dcb	$4e71,8
+	NOT.W	$FFFF8240.W
+ 	jmp	(a0)		;(a5)+ -> (a6)   uses d1-a1
 endcpy:
+	NOT.W	$FFFF8240.W
 	lea	230(a6),a6
 	lea	linebuffend-linebuffbegin(a4),a4
 	dbf	d0,scrollcpy
@@ -1392,6 +1487,9 @@ nexthextodez:
 	;	Distorted scroller by Gunstick
 	;The 26 copyroutines
 cpyjsr:
+	rept	30
+	dc.l	cpy00
+	endr
 	dc.l	cpy00,cpy01,cpy02,cpy03,cpy04
 	dc.l	cpy05,cpy06,cpy07,cpy08,cpy09
 	dc.l	cpy10,cpy11,cpy12,cpy13,cpy14
@@ -1413,6 +1511,15 @@ c8	equr	a0
 
 cpy00:	;7,9,9,9,9,9
 
+;	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
+;	move.b	#0,$ffff8260.w
+	move.b	#$70,$ffff8240.w
+	move.b	#0,$ffff8240.w
+;	movem.l	d0/d1/d2,$ffff8250.w	;mdist
+	dcb	$4e71,9
+ 	move.b	#0,$ffff8260.w	;Open left border
+	move.b	#0,$ffff8260.w
+	move.l	d3,$ffff824e.w	;mdist
 
 	movem.l	(a5)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,(a6)
@@ -1885,6 +1992,11 @@ cpy25:	;9,9,9,9,9,5+2
 
 	;**********************************************************
 	;	Distorted scroller by Gunstick
+
+
+digi:
+;	incbin	"d:\telgraph.dmn"
+
 hwbounceptr:	dc.l	hwbouncetab
 hwbouncetab:
 	dc.w	230*16,230*16
@@ -1897,12 +2009,12 @@ hwbouncetab:
 	dc.w	230*12,230*12
 	dc.w	230*11,230*10
 	dc.w	230*9,230*8
-	dc.w	230*7,230*7
-	dc.w	230*7,230*6
-	dc.w	230*6,230*6
-	dc.w	230*6,230*6
+	dc.w	230*7
+	dc.w	230*6
+	dc.w	230*5,230*3
+	dc.w	230*1,230*3
+	dc.w	230*5
 	dc.w	230*6,230*7
-	dc.w	230*7,230*7
 	dc.w	230*8,230*9
 	dc.w	230*10,230*11
 	dc.w	230*12,230*12
@@ -1974,24 +2086,23 @@ scrnadrs:
 ;	dc.l	screen+64400*0+230*280
 	dc.l	0
 font	equ	*-32*8
-	incbin	"font.bin"
+	incbin	"d:\font.bin"
 	even
 wavetab:
 ;	dc.l	byteschief,0
-	dc.l	hops1
-	dc.l	nix
-	dc.l	byteschief
-	dc.l	byteschief
-	dc.l	byteschief
-	dc.l	byteschief
-	dc.l	byteschief
-	dc.l	byteschief
+	dc.l	wordschief
+	dc.l	wordschief
 	dc.l	byteschief
 	dc.l	nix
 	dc.l	nix
 	dc.l	wordhinher
 	dc.l	nix
 	dc.l	nix
+	dc.l	hacker,hacker,hacker
+	dc.l	hacker,hacker,hacker
+	dc.l	hacker,hacker,hacker
+	dc.l	hacker,hacker,hacker
+	dc.l	hacker,hacker,hacker
 ;	dc.l	dreieck
 	dc.l	dreieck
 	dc.l	dreieck
@@ -2002,6 +2113,10 @@ wavetab:
 	dc.l	dreieck
 	dc.l	dreieck
 	dc.l	dreieck
+	dc.l	slowdist,slowdist,slowdist,slowdist
+	dc.l	slowdist,slowdist,slowdist,slowdist
+	dc.l	slowdist,slowdist,slowdist,slowdist
+	dc.l	hacker,hacker,hacker
 	dc.l	sinus
 	dc.l	sinus
 	dc.l	sinus
@@ -2044,14 +2159,82 @@ wavetab:
 	dc.l	bytezurueck
 	dc.l	bytezurueck
 	dc.l	bytezurueck
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	0	;end
+hacker:
+	dc.w	2-1,-2,2,-2,2,-2,2,-2-1
+	dc.w	4,-4,4,-4,4,-4,4,-4-1
+	dc.w	6,-6,6,-6,6,-6,6,-6-1
+	dc.w	8,-8,8,-8,8,-8,8,-8-3
+	dc.w	12,-12,12,-12,12,-12,12,-12-1
+	dc.w	14,-14,14,-14,14,-14,14,-14-1
+	dc.w	16,-16,16,-16,16,-16,16,-16
+	dc.w	16,-16,16,-16,16,-16,16,-16+1
+	dc.w	14,-14,14,-14,14,-14,14,-14+1
+	dc.w	12,-12,12,-12,12,-12,12,-12+3
+	dc.w	8,-8,8,-8,8,-8,8,-8+1
+	dc.w	6,-6,6,-6,6,-6,6,-6+1
+	dc.w	4,-4,4,-4,4,-4,4,-4+1
+	dc.w	2,-2,2,-2,2,-2,2,-2+1
+	dc.w	128
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,16
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,-16
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,16
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,-16
+	dc.w	128
+slowdist:
+	dc.w	0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1
+	dc.w	0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1
+	dc.w	0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1
+	dc.w	0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1
+	dc.w	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+	dc.w	1,1,1,2,1,1,1,2,1,1,1,2,1,1,1,2
+	dc.w	1,2,1,2,1,2,1,2,2,2,2,2,2,2,2,2
+	dc.w	2,2,2,3,2,2,2,3,2,3,2,3,2,3,2,3
+	dc.w	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+	dc.w	2,3,2,3,2,3,2,3,2,2,2,3,2,2,2,3
+	dc.w	2,2,2,2,2,2,2,2,1,2,1,2,1,2,1,2
+	dc.w	1,1,1,2,1,1,1,2,1,1,1,2,1,1,1,2
+	dc.w	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+	dc.w	0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1
+	dc.w	0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1
+	dc.w	0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1
+	dc.w	0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	0,0,0,-1,0,0,0,-1
+	dc.w	0,0,0,-1,0,0,0,-1
+	dc.w	0,-1,0,-1,0,-1,0,-1
+	dc.w	0,-1,0,-1,0,-1,0,-1
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	-1,-1,-1,-2,-1,-1,-1,-2
+	dc.w	-1,-2,-1,-2,-2,-2,-2,-2
+	dc.w	-2,-2,-2,-3,-2,-3,-2,-3
+	dc.w	-3,-3,-3,-3,-3,-3,-3,-3
+	dc.w	-2,-3,-2,-3,-2,-2,-2,-3
+	dc.w	-2,-2,-2,-2,-1,-2,-1,-2
+	dc.w	-1,-1,-1,-2,-1,-1,-1,-2
+	dc.w	-1,-1,-1,-1,-1,-1,-1,-1
+	dc.w	0,-1,0,-1,0,-1,0,-1
+	dc.w	0,-1,0,-1,0,-1,0,-1
+	dc.w	0,0,0,-1,0,0,0,-1
+	dc.w	0,0,0,-1,0,0,0,-1
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	dc.w	128
+
 bytezurueck;
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
@@ -2224,6 +2407,11 @@ space	equ	87
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
 	dc.b	space,space
 scrolltext:
+	dc.b	space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,0
+	
 	dc.b	space,space,space,h,h+1,e,e+1,l,l+1,l,l+1,o,o+1,space,space
 	dc.b	t,t+1,h,h+1,i,i+1,s,s+1,space,space,i,i+1,s,s+1,space,space
 	dc.b	g,g+1,u,u+1,n,n+1,s,s+1,t,t+1,i,i+1,c,c+1,k,k+1,space,s,s+1
@@ -2259,66 +2447,21 @@ psginittab:dc.b 0,$ff,1,$ff,2,$ff,3,$ff,4,$ff,5,$ff,6,0
 	dc.b 7,$7f,8,7,9,7,10,7,$ff,0
 	even
 hwpalette:
-	dc.w $0700,$07,$0474,$0777,$0606,$0700,$0170,$62
-	dc.w $0770,$0707,$50,$0505,$75,$0777,$00,$0711
+	dc.w $0700,$0707,$0474,$0777,$0606,$0505,$0404,$303
+	dc.w $777,$666,$555,$444,$333,$222,$111,$002 
 graphic:
 	dc.w $d555,$3333,$0f0f,$ff
 message:
-	dc.b 27,"c",6,13,10,13,10,10,10,10,10,10,10,10,10,"Hardware scrolling discovery"
-	dc.b 13,10,"Scroll !!!!!!",13,10,10
-test:	equ 0
-	ifeq test
-	dc.b 'UUUU	      LLLL MMMMMM	 MMMMMM',13,10
-	dc.b 'UUUU	      LLLL     MMMM    MMMMMMMM',13,10
-	dc.b 'UUUU	      LLLL	 MMMMMMMM  MMMM',13,10
-	dc.b 'UUUU	      LLLL	   MMMM    MMMM',13,10
-	dc.b 'UUUU	      LLLL		   MMMM',13,10
-	dc.b 'UUUU	      LLLL		   MMMM',13,10
-	dc.b 'UUUU	      LLLL		   MMMM',13,10
-	dc.b 'UUUU	      LLLL		   MMMM',13,10
-	dc.b 'UUUU	   UUUU LLLL		   MMMM',13,10
-	dc.b 'UUUUUUUUUUUUU	    LLLLLLLLLLLLLL MMMM',13,10
-	endc
-	ifne test
-	dc.b '					       ',13,10
-	dc.b '	   TTTTTTTTTTT HH     HH EEEEEEEEE     ',13,10
-	dc.b '	       TT      HH     HH EE	       ',13,10
-	dc.b '	       TT      HH     HH EE	       ',13,10
-	dc.b '	       TT      HHHHHHHHH EEEEE	       ',13,10
-	dc.b '	       TT      HH     HH EE	       ',13,10
-	dc.b '	       TT      HH     HH EE	       ',13,10
-	dc.b '	       TT      HH     HH EEEEEEEEE     ',13,10
-	dc.b '					       ',13,10
-	dc.b 'FFFFFFFFF AAAAAAAAA TTTTTTTTTT EEEEEEEEEE',13,10
-	dc.b 'FF	AA     AA     TT     EE        ',13,10
-	dc.b 'FF	AA     AA     TT     EE        ',13,10
-	dc.b 'FFFFF	AAAAAAAAA     TT     EEEEE     ',13,10
-	dc.b 'FF	AA     AA     TT     EE        ',13,10
-	dc.b 'FF	AA     AA     TT     EE        ',13,10
-	dc.b 'FF	AA     AA     TT     EEEEEEEEEE',13,10
-	dc.b '					       ',13,10
-	endc
-	dc.b 27,"Y",32+20,32,"|"
-	dc.b 13,10,"|"
-	dc.b 13,10,"0123456789012345678901234567890123456789"
-	dc.b 13,10,"0000000000111111111122222222223333333333"
-	dc.b 13,10,"||||||||||||||||||||||||||||||||||||||||",0
-	dc.b 13,10,"||||||||||||||||||||||||||||||||||||||||",0
-	even
-hwscrolldat:			
-;	dc.b	$00,$00,$00,$00
-;	dc.b	$00,$00,$00,$ff ;44
-;	dc.b	$00,$00,$ff,$00 ;-2
-;	dc.b	$00,$ff,$00,$00 ;-106
-;	dc.b	$ff,$00,$00,$00 ;26
-;	dc.b	$ff,$00,$00,$ff ;70
-;	dc.b	$ff,$00,$ff,$00 ;24
-;	dc.b	$ff,$ff,$00,$00 ;-80
-
-	incbin	"hwscroll.dat"
+	dc.b 0
 	even
 lowbyte:
 	dc.b 0
+
+	
+hwscrolldat:			
+
+	incbin	"d:\hwscroll.dat"
+	even
 	section	bss
 stack:	ds.l 1
 oldpal: ds.w 16
@@ -2332,12 +2475,12 @@ tabentry:
 	ds.l	1	;for hwscroll
 cpybufdest:
 	ds.l	1	;copy from (this+4buffers-1scroll) to (this) 
-nextscrn:
-	ds.l	1	;points to next screenadress to be used
 shiftcnt:
 	ds.w	1	;counter for shifter
 count:
 	ds.l	1	;for some dbf without register
+nextscrn:	
+	ds.l	1	;points to next screenadress to be used
 distcalc:
 	ds.w	1
 distwaveptr:

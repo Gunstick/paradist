@@ -1172,15 +1172,16 @@ _rueckbufok:
 
 copydistscroll:
 	;**** Copy all the buffers to the screen ****
-	;loop needs : 	a0,d1  : copy
-	;		a6,a4,a5:ptr
+	;loop needs : 	a0,d1-d6  : copy
+	;		a6,a4,a5,a3:ptr
 	;		d0: loop
 	move.l	logbase,a6	;put it there
 	add.l	#6*160+230*(280-20),a6	;for hwscroll
 	lea	buffer,a4
 	moveq	#18-5,d0		;scrollhigh:18
 
-	dcb	$4e71,25
+	lea	openlowtab,a3
+	dcb	$4e71,25-3
 	dcb	$4e71,25	;digi
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1193,8 +1194,7 @@ copydistscroll:
 ;	move.b	#7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	do_mdist
-	move.b	#2,$ffff820a.w	;sicher is sicher: 50Hz
-	dcb	$4e71,7
+	dcb	$4e71,11
 scrollcpy:
 	move.w	shift-buffer(a4),d1
 	mulu	#208,d1
@@ -1207,7 +1207,8 @@ scrollcpy:
 	calc_mdist
 	move.b	#$77,$ffff8240.w
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+;	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
 ;	move.b	#$77,$ffff8240.w
 	move.b	#0,$ffff8240.w
 	dcb	$4e71,6-4
@@ -1216,7 +1217,7 @@ endcpy:
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 	do_mdist
-	dcb	$4e71,4
+	move.b	#2,$ffff820a.w	;sicher is sicher: 50Hz
 	lea	230(a6),a6
 	lea	linebuffend-linebuffbegin(a4),a4
 	dbf	d0,scrollcpy
@@ -1439,7 +1440,8 @@ c6	equr	d6
 swnodigi	MACRO
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#$0,$ffff8240.w
 	dcb	$4e71,8
@@ -1452,7 +1454,8 @@ swdigi	MACRO
 	dcb	$4e71,22	;digi
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#$0,$ffff8240.w
 	dcb	$4e71,8
@@ -1501,7 +1504,8 @@ cpy00:	;7,9,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1551,7 +1555,8 @@ cpy01:	;2+5,7,7,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1604,7 +1609,8 @@ cpy02:	;4+3,9,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1657,7 +1663,8 @@ cpy03:	;6+1,9,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1708,7 +1715,8 @@ cpy04:	;8,8,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1758,7 +1766,8 @@ cpy05:	;9,1+6,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1808,7 +1817,8 @@ cpy06:	;9,3+4,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1858,7 +1868,8 @@ cpy07:	;9,5+2,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 ;	dcb	$4e71,25	
@@ -1908,7 +1919,8 @@ cpy08:	;9,7,9,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -1957,7 +1969,8 @@ cpy09:	;9,9,7,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2004,7 +2017,8 @@ cpy10:	;9,9,2+5,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2053,7 +2067,8 @@ cpy11:	;9,9,4+3,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2102,7 +2117,8 @@ cpy12:	;9,9,6+1,9,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2150,7 +2166,8 @@ cpy13:	;9,9,8,8,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2197,7 +2214,8 @@ cpy14:	;9,9,9,1+6,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2246,7 +2264,8 @@ cpy15:	;9,9,9,3+4,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2295,7 +2314,8 @@ cpy16:	;9,9,9,5+2,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2342,7 +2362,8 @@ cpy17:	;9,9,9,7,9,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2391,7 +2412,8 @@ cpy18:	;9,9,9,9,7,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2441,7 +2463,8 @@ cpy19:	;9,9,9,9,2+5,9
 	dcb	$4e71,6
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2489,7 +2512,8 @@ cpy20:	;9,9,9,9,4+3,9
 	dcb	$4e71,6+1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2541,7 +2565,8 @@ cpy21:	;9,9,9,9,6+1,9
 	dcb	$4e71,5
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2591,7 +2616,8 @@ cpy22:	;9,9,9,9,8,8
 	dcb	$4e71,5
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2641,7 +2667,8 @@ cpy23:	;9,9,9,9,8,8
 	dcb	$4e71,5
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2689,7 +2716,8 @@ cpy24:	;9,9,9,9,9,3+4
 	dcb	$4e71,1+6+4
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2741,7 +2769,8 @@ cpy25:	;9,9,9,9,9,5+2
 	dcb	$4e71,1+4
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
+	move.b	(a3)+,$ffff820a.w
+;	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	dcb	$4e71,5
@@ -2846,6 +2875,29 @@ scrnadrs:
 ;	dc.l	screen+64400*3+230*260
 ;	dc.l	screen+64400*0+230*280
 	dc.l	0
+openlowtab:
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,0,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+	dc.b	2,2,2,2,2,2
+
+	even
 font	equ	*-32*8
 	incbin	"includes\font.bin"
 	even

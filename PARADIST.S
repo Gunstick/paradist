@@ -3,7 +3,8 @@ overscan:equ 0
 ; Double Megadistorter by Gunstick   (c) ULM 1990
 ; we know! it's long, but it works ! And it's from ULM !!!
 
-parallax	equ	10
+parallax	equ	0
+parallay	equ	0
 
 bus	equ	10
 
@@ -366,7 +367,7 @@ looop:
 	movem.l black,d0-d7
 	movem.l d0-d7,$ffff8240.w
 
-asd	equ	244
+;blaf	equ	174-55
 blaf	equ	174
 	move.w	#1500-30,d0
 opentopwait:
@@ -387,10 +388,10 @@ loop:
 	not.w	$ffff8240.w
 
 	move.b	#0,$fffffa19.w	;stop timer
-	move.b	#asd,$fffffa1f.w
+	move.b	#244,$fffffa1f.w	;244
+asd	equ	7
 	move.b	#32,$fffffa07.w
-	move.b	#0,$fffffa0b.w
-
+	move.b	#0,$fffffa0b.w	;clr pending
 	not.w	$ffff8240.w
 	move.b	#2,$ffff820a.w
 ;ULM Hardware Scrolling PART 2
@@ -440,7 +441,7 @@ mitte:
 	move.b	#2,$ffff8260.w
 	move.b	#0,$ffff8260.w
 cont3:
-	move.b	#7,$fffffa19.w
+	move.b	#asd,$fffffa19.w
 	dcb	$4e71,28
 	tst.b	(a0)+
 	bne.s	rechts1
@@ -495,6 +496,7 @@ _scrnok:
 	;do some hardwarebouncing
 	move.l	hwbounceptr-nextscrn(a2),a0		;~20
 	move.w	(a0)+,d1		;~8
+	cmpi.w	#-1,d1
 	bne.s	hwbounceok		;~8
 	lea	hwbouncetab-nextscrn(a2),a0		;~8
 	move.w	(a0)+,d1		;~8
@@ -512,8 +514,7 @@ _hwbounceok:
 	;free: d0-a6/usp
 
 
-	dcb	$4e71,4+4-6
-	dcb	$4e71,25-23
+	dcb	$4e71,2
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -617,10 +618,10 @@ _notnextwavetab:
 	do_mdist2
 	
 	move.w	d_3,distcalc	;~16
-
-	lea	disttable+4,a_2 ;~12 scroll begins 18 lines before end of screen
+scrhigh	equ	20
+	lea	disttable+0,a_2 ;~12 scroll begins 18 lines before end of screen
 	lea	shift,a_0	;~12 pointer to the shifts
-	move.w	#-(18*8),count	;~20 scroll has 18 lines
+	move.w	#-(scrhigh*8),count	;~20 scroll has 18 lines
 distcalcloop:	;(~12)
 
 	;free: d0/d3-d7/a1-a2/a4-a6/usp  cpy:d0/d3/a1/a2
@@ -755,7 +756,7 @@ _nottextend:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	clr.b	d_1		;~4 C
 	clr.b	d_2		;~4 K
-	lea	font+(18*8),a_1	;~8
+	lea	font+(scrhigh*8),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
 ;	lea	(a_1),a_2	;C
@@ -1084,7 +1085,7 @@ _rueckbufok:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 	clr.b	d_1	;~4 E
 	clr.b	d_2	;~4 A
-	lea	font+(18*8),a_1	;~12
+	lea	font+(scrhigh*8),a_1	;~12
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
@@ -1146,7 +1147,7 @@ copydistscroll:
 	
 	move.l	logbase,a0	;put it there
 	add.l	#6*160+230*(280-20),a0	;for hwscroll
-	move.w	#16,count		;scrollhigh:18
+	move.w	#13,count		;scrollhigh:18
 	lea	openlowtab,a1
 	
 	
@@ -1221,7 +1222,7 @@ c9	equr	a5
 c10	equr	a1
 
 	;let's copy the rest
-	move.w	#2,count
+	move.w	#7,count
 scrollcpy2:
 	move.w	shift-buffer(a6),d1
 	mulu	#208,d1
@@ -1363,8 +1364,13 @@ codmod:
 
 ;--------------------------------------------------------------
 ;	bra	looop
+	movem.l black,d0-d7
+	movem.l d0-d7,$ffff8240.w
+
 	move.l	mdistadjustptr,a4
-	lea	shift,a0
+sss	equ	15
+	lea	shift+sss*(linebuffend-linebuffbegin),a0
+	lea	sss*2(a4),a4
 	moveq	#4,d0
 adjloop:
 	move.w	(a0),d1
@@ -1379,6 +1385,7 @@ adjloop:
 	move.w	d1,14*20*2(a4)
 	move.w	d1,(a4)+
 	dbf	d0,adjloop
+	sub.w	#sss*2,a4
 	cmp.l	#mdistadjust+14*20*2,a4
 	blo.s	adjok
 	lea	mdistadjust,a4
@@ -1388,13 +1395,27 @@ adjok:
  	lea	mdistgraph,a5
 	move.l	mdistadjustptr,a4
 	lea	mdistcurv,a3
-	lea	16*2(a4),a4
+	move.l	hwbounceptr,a0
+	move.w	-2(a0),d0
+	cmpi.w	#-1,d0
+	bne.s	bounceok
+	move.w	hwbouncetab,d0
+bounceok:
+	ext.l	d0
+	divs	#230/2,d0
+	adda.w	d0,a4
+	ifeq	parallay
+	andi.w	#$fffc,d0
+	asl.w	#4,d0
+	adda.w	d0,a5
+	endc
+
+	lea	15*2(a4),a4
 	calc_mdist
 	movem.l	d3/d4/d5/d6,hwpalette
 	lea	64(a5),a5
-	movem.l black,d0-d7
-	movem.l d0-d7,$ffff8240.w
 
+	move.b	#0,$fffffa0b.w	;clr pending
 no_int:
 	tst.b	$fffffa0b.w
 	beq.s	no_int
@@ -3184,52 +3205,28 @@ mdistcurv:
 
 hwbounceptr:	dc.l	hwbouncetab
 hwbouncetab:
-	dc.w	230
-	dc.w	0
-	dc.w	230*16,230*16
-	dc.w	230*16,230*16
-	dc.w	230*15,230*15
-	dc.w	230*15,230*15
-	dc.w	230*14,230*14
-	dc.w	230*14,230*14
-	dc.w	230*13,230*13
+;	dc.w	0,0,0,0,0,0,-1
+;	dc.w	0,0,230,230,230*2,230,230,0,0,-1
+	dc.w	230*12,230*12
+	dc.w	230*12,230*12
 	dc.w	230*12,230*12
 	dc.w	230*11,230*10
 	dc.w	230*9,230*8
 	dc.w	230*7
 	dc.w	230*6
-	dc.w	230*5,230*3
-	dc.w	230*3,230*3
-	dc.w	230*3,230*3
-	dc.w	230*2,230*2
-	dc.w	230*2,230*2
-	dc.w	230*1,230*1
-	dc.w	230*1,230*1
-	dc.w	230*1,230*1
-	dc.w	230*1,230*1
-	dc.w	230*2,230*2
-	dc.w	230*2,230*2
-	dc.w	230*2,230*2
-	dc.w	230*2,230*2
-	dc.w	230*2,230*2
-	dc.w	230*3,230*3
-	dc.w	230*3,230*3
+	dc.w	230*5
+	dc.w	230*3
+	dc.w	230*1
+	dc.w	0
+	dc.w	230*1
+	dc.w	230*3
 	dc.w	230*5
 	dc.w	230*6,230*7
 	dc.w	230*8,230*9
 	dc.w	230*10,230*11
+	dc.w	230*11,230*11
 	dc.w	230*12,230*12
-	dc.w	230*13,230*13
-	dc.w	230*14,230*14
-	dc.w	230*14,230*14
-	dc.w	230*15,230*15
-	dc.w	230*15,230*15
-	dc.w	230*16,230*16
-	dc.w	230*16,230*16
-	dc.w	230*17,230*17
-	dc.w	230*17,230*17
-	dc.w	230*17,230*17
-	dc.w	0
+	dc.w	-1
 scrbase	equ	0
 scrnadrs:
 	dc.l	screen-scrbase*230+64400*0
@@ -3291,9 +3288,9 @@ scrnadrs:
 ;	dc.l	screen-scrbase*230+64400*0+230*280
 	dc.l	0
 openlowtab:
-	dc.b	2,2,2,2,2,2
-	dc.b	2,2,2,2,2,2
-	dc.b	2,2,2,2,2,2
+;	dc.b	2,2,2,2,2,2
+;	dc.b	2,2,2,2,2,2
+;	dc.b	2,2,2,2,2,2
 	dc.b	2,2,2,2,2,2
 	dc.b	2,2,2,2,2,2
 	dc.b	2,2,2,0,2,2	;old
@@ -3321,44 +3318,15 @@ font	equ	*-32*8
 wavetab:
 ;	dc.l	byteschief,0
 	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
 	dc.l	byteschief
 	dc.l	nix
 	dc.l	nix
 	dc.l	wordhinher
 	dc.l	nix
 	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	wordhinher
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	wordhinher
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	wordhinher
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
-	dc.l	nix
 	dc.l	hacker,hacker,hacker
-	dc.l	hacker,hacker,hacker
-;	dc.l	dreieck
 	dc.l	dreieck
 	dc.l	dreieck
 	dc.l	slowdist,slowdist,slowdist,slowdist
@@ -3740,7 +3708,7 @@ shift:
 buffer:
 	ds.l	2*26*16	;16 shifts of the 1st line of the scrolling
 linebuffend:
-	rept	17	;18 lines scroll
+	rept	scrhigh	;18 lines scroll
 ;	ds.l	1
 ;	ds.l	1
 ;	ds.w	1

@@ -1,39 +1,295 @@
-overscan:equ 0
-; Double Megadistorter by Gunstick   (c) ULM 1990
-; we know! it's long, but it works ! And it's from ULM !!!
-
-
-test		equ	10
-
+; The Paralax distorter by Gunstick from Unlimited Matricks
 parallax	equ	0
 parallay	equ	0
 bus		equ	10
 digitest	equ	10
 
+;	config:
 
-	pea	start
+def_version	equ	10
+d0_for_mcp	equ	0
+mcp_adr		equ	$500
+keyboard	set	10
+
+test	equ	10
+
+	ifeq	def_version
+	opt	d-
+	org	$2500
+keyboard	set	0
+	endc
+
+	section	text
+
+	ifne	def_version
+	pea	start(pc)
 	move.w	#38,-(sp)
 	trap	#14
 	addq.l	#6,sp
 
 	clr.w	-(sp)
 	trap	#1
+	endc
+
+start:
+	lea	oldcpu(pc),a0
+	move.l	sp,(a0)+
+	lea	my_stack,sp
+	move.w	sr,(a0)+
+	move.w	#$2700,sr
+	move.l	usp,a1
+	move.l	a1,(a0)+
+
+	ifne	def_version
+	moveq	#$12,d0
+	bsr	ikbd_wrt
+	moveq	#$1a,d0
+	bsr	ikbd_wrt
+
+	move.l	$408.w,old_408
+	move.l	#exit_with_408,$408.w
+	endc
+
+	lea	oldvideo(pc),a0
+	move.b	$ffff8260.w,(a0)+
+	move.b	$ffff820a.w,(a0)+
+	move.l	$ffff8200.w,(a0)+
+	movem.l	$ffff8240.w,d0-d7
+	movem.l	d0-d7,(a0)
+
+	movem.l	black(pc),d0-d7
+	movem.l	d0-d7,$ffff8240.w
+
+	lea	oldvectors(pc),a0
+	move.l	$68.w,(a0)+
+	move.l	$70.w,(a0)+
+	move.l	$114.w,(a0)+
+	move.l	$118.w,(a0)+
+	move.l	$120.w,(a0)+
+	move.l	$134.w,(a0)+
+	move.l	#nix,$68.w
+	move.l	#nix,$70.w
+	move.l	#nix,$114.w
+	ifeq	keyboard
+	move.l	#nix,$118.w
+	endc
+	move.l	#nix,$120.w
+	move.l	#nix,$134.w
+
+	lea	oldmfp(pc),a0
+	move.b	$fffffa07.w,(a0)+
+	move.b	$fffffa09.w,(a0)+
+	move.b	$fffffa13.w,(a0)+
+	move.b	$fffffa15.w,(a0)+
+	move.b	$fffffa17.w,(a0)+
+	move.b	$fffffa19.w,(a0)+
+	move.b	$fffffa1b.w,(a0)+
+	move.b	$fffffa1d.w,(a0)+
+
+	bclr	#3,$fffffa17.w
+	clr.b	$fffffa07.w
+	ifeq	keyboard
+	clr.b	$fffffa09.w
+	endc
+	ifne	keyboard
+	move.b	#%01000000,$fffffa09.w
+	endc
+
+	bsr	waitvbl1
+	move.b	#0,$ffff8260.w
+	move.b	#2,$ffff820a.w
+
+	bsr	psginit
+
+	bsr	mfp_test
+
+	jmp	screen
+back:
+
+	lea	my_stack,sp
+
+	bsr	psginit
+
+	lea	oldmfp(pc),a0
+	move.b	(a0)+,$fffffa07.w
+	move.b	(a0)+,$fffffa09.w
+	move.b	(a0)+,$fffffa13.w
+	move.b	(a0)+,$fffffa15.w
+	move.b	(a0)+,$fffffa17.w
+	move.b	(a0)+,$fffffa19.w
+	move.b	(a0)+,$fffffa1b.w
+	move.b	(a0)+,$fffffa1d.w
+
+	lea	oldvectors(pc),a0
+	move.l	(a0)+,$68.w
+	move.l	(a0)+,$70.w
+	move.l	(a0)+,$114.w
+	move.l	(a0)+,$118.w
+	move.l	(a0)+,$120.w
+	move.l	(a0)+,$134.w
+
+	move.b	#2,$ffff820a.w
+	bsr.s	waitvbl1
+	move.b	#0,$ffff820a.w
+	bsr.s	waitvbl1
+	move.b	#2,$ffff820a.w
+	bsr.s	waitvbl1
+
+	lea	oldvideo(pc),a0
+	move.b	(a0)+,$ffff8260.w
+	move.b	(a0)+,$ffff820a.w
+	move.l	(a0)+,$ffff8200.w
+	movem.l	(a0),d0-d7
+	movem.l	d0-d7,$ffff8240.w
+
+	ifne	def_version
+	moveq	#$14,d0
+	bsr.s	ikbd_wrt
+	moveq	#$8,d0
+	bsr.s	ikbd_wrt
+	endc
+
+	lea	oldcpu(pc),a0
+	move.l	(a0)+,sp
+	move.w	(a0)+,sr
+	move.l	(a0)+,a1
+	move.l	a1,usp
+
+	ifne	def_version
+	move.l	old_408(pc),$408.w
+
+	rts
+	endc
+
+	ifeq	def_version
+	moveq	#d0_for_mcp,d0
+	jsr	mcp_adr.w
+	endc
+
+psginit:
+	moveq	#10,d0
+	lea	$ffff8800.w,a0
+nextinit:
+	move.b	d0,(a0)
+	move.b	#0,2(a0)
+	dbf	d0,nextinit
+	move.b	#7,(a0)
+	move.b	#$7f,2(a0)
+	move.b	#14,(a0)
+	move.b	#$26,2(a0)
+	rts
+
+waitvbl1:
+	move.w	#9000,d0
+waitvbl2:
+	dbf	d0,waitvbl2
+waitvbl:
+	lea	$ffff8209.w,a0
+	movep.w	-8(a0),d0
+waitvbl3:
+	tst.b	(a0)
+	bne.s	waitvbl3
+	movep.w	-4(a0),d1
+	cmp.w	d0,d1
+	bne.s	waitvbl3
+	rts
+
+ikbd_wrt:
+	lea	$fffffc00.w,a0
+ik_wait:
+	move.b	(a0),d1
+	btst	#1,d1
+	beq.s	ik_wait
+	move.b	d0,2(a0)
+	rts
+
+mfp_test:
+	move.w	#$2700,sr
+
+	bsr.s	waitvbl
+	bsr.s	waitvbl
+
+	move.b	#0,$fffffa19.w
+	move.b	#255,$fffffa1f.w
+	move.b	#$20,$fffffa07.w
+	move.b	#0,$fffffa13.w
+
+	moveq	#30,d1
+	lea	$ffff8209.w,a0
+check_mfp_s1:
+	move.b	(a0),d0
+	beq.s	check_mfp_s1
+	sub.w	d0,d1
+	lsl.w	d1,d1
+	move.b	#0,$fffffa0b.w
+	move.b	#1,$fffffa19.w
+
+	moveq	#-1,d0
+mfp_test_loop:
+	dbf	d0,mfp_test_loop
+
+	moveq	#0,d0
+	move.b	$fffffa1f.w,d0
+	move.b	#0,$fffffa19.w
+	cmp.w	#$9b,d0
+	ble.s	mfp_of_my_st
+	move.w	#-1,mfp_type
+mfp_of_my_st:
+	rts
+
+	ifne	def_version
+	dc.l	'XBRA'
+	dc.l	'TFSY'
+old_408:
+	dc.l	0
+exit_with_408:
+	bsr.s	exit
+	move.l	old_408(pc),a0
+	jmp	(a0)
+	endc
+
+exit:
+	movem.l	black(pc),d0-d7
+	movem.l	d0-d7,$ffff8240.w
+
+	bra	back
+
+nix:
+	rte
+
+oldcpu:		ds.w	4
+oldvideo:	ds.w	19
+oldvectors:	ds.l	6
+oldmfp:		ds.w	5
+mfp_type:	ds.w	1
+black:		ds.l	16
+
+
+****************************************************************
+
+;overscan:equ 0
+; Double Megadistorter by Gunstick   (c) ULM 1990
+; we know! it's long, but it works ! And it's from ULM !!!
+
+
+
+
 
 ;	dc.w	$c8*4
 ;	dc.w	138*4
-;	dc.w	195*4
+	dc.w	195*4
 ;	dc.w	167*4
 ;	dc.w	197*4
 ;	dc.w	167*4
-	dc.w	255*4
+;	dc.w	255*4
 digisound:
 ;	incbin	"includes\telgraph.dmn"
 ;	incbin	"includes\jasy75.dmn"
-;	incbin	"includes\senn_l1.dmn"
+	incbin	"includes\senn_l1.dmn"
 ;	incbin	"includes\senn_l2.dmn"
 ;	incbin	"includes\luna.dmn"
 ;	incbin	"includes\luna2.dmn"
-	incbin	"includes\infinity.dmn"
+;	incbin	"includes\infinity.dmn"
 digiend:
 	even
 
@@ -45,153 +301,6 @@ fontend:
 kotz:
 	dc.l	0
 noswreset:
-	rts
-start:
-	move	#$2700,sr
-	bsr	waitvbl
-
-	lea	$ffff8240.w,a2
-	lea	oldpal,a3
-
-	movem.l (a2),d0-d7
-	movem.l d0-d7,(a3)
-	movem.l hwpalette,d0-d7
-	movem.l d0-d7,(a2)
-
-	lea	$ffff8201.w,a0
-	movep.w 0(a0),d0
-	lea	screenad1,a2
-	move.w	d0,(a2)
-
-	move.l	#screen,d0
-	add.l	#255,d0
-	and.l	#$ffff00,d0
-	lea	screenad2,a2
-	move.l	d0,(a2)
-	movea.l d0,a2
-	ror.l	#8,d0
-	movep.w d0,0(a0)
-
-	move.w	#0,-(sp)
-	move.l	a2,-(sp)
-	move.l	a2,-(sp)
-	move.w	#5,-(sp)
-;	trap	#14
-	lea	12(sp),sp
-
-	move.l	screenad2,d0
-	sub.l	#160*6,d0
-	move.l	d0,screenadr
-;	addi.l	#8*5-64,screenadr
-
-	movea.l screenad2,a0
-	move.l	#9999,d0
-clear_loop:
-	clr.l	(a0)+
-	dbra	d0,clear_loop
-
-	movea.l screenad2,a0
-;	movem.l graphic,d6-d7
-	movem.l black,d6-d7
-	move.w	#285,d2
-allline:
-	ifne overscan
-	move.w	#20,d1
-	endc
-	ifeq overscan
-	move.w	#27,d1
-	endc
-
-alles:
-	move.l	d6,(a0)+
-	move.l	d7,(a0)+
-	dbra	d1,alles
-	ifeq overscan
-	addq.l	#6,a0
-	endc
-
-	dbra	d2,allline
-
-	pea	message
-	move.w	#9,-(sp)
-;	trap	#1
-	addq.w	#6,sp
-
-	bsr	psginit
-
-	lea	oldres,a0
-	move.b	$ffff8260.w,(a0)
-	bsr	waitvbl
-	move.b	#0,$ffff8260.w
-
-	move.b	#18,$fffffc02.w
-	bsr	waitvbl
-	move.b	#26,$fffffc02.w
-
-	move.l	usp,a0
-	move.l	a0,savusp
-	bsr	screen2
-	move.l	savusp,a0
-	move.l	a0,usp
-
-	move.b	#20,$fffffc02.w
-	bsr.s	waitvbl
-	move.b	#8,$fffffc02.w
-
-	bsr.s	waitvbl
-	move.b	#0,$ffff820a.w
-	bsr.s	waitvbl
-	move.b	#2,$ffff820a.w
-	move.b	oldres,$ffff8260.w
-	lea	$ffff8201.w,a0
-	moveq	#0,d0
-	move.w	screenad1,d0
-	movep.w d0,0(a0)
-	lsl.l	#8,d0
-
-	move.w	#0,-(sp)
-	move.l	d0,-(sp)
-	move.l	d0,-(sp)
-	move.w	#5,-(sp)
-;	trap	#14
-	lea	12(sp),sp
-
-	bsr.s	psginit
-
-	lea	oldpal,a0
-	lea	$ffff8240.w,a1
-	movem.l (a0),d0-d7
-	movem.l d0-d7,(a1)
-
-	bsr.s	waitvbl
-	move	#$2300,sr
-
-	rts
-savusp:	ds.l	1
-
-waitvbl:
-
-	move.b	$ffff8203.w,d0
-	lsl.w	#8,d0
-	lea	$ffff8207.w,a0
-no_vbl:
-	movep.w 0(a0),d1
-	cmp.w	d0,d1
-	bne.s	no_vbl
-
-	rts
-
-psginit:
-	lea	psginittab,a0
-nextinit:
-	move.b	(a0)+,d0
-	cmp.b	#$ff,d0
-	beq.s	initend
-	move.b	(a0)+,d1
-	move.b	d0,$ffff8800.w
-	move.b	d1,$ffff8802.w
-	bra.s	nextinit
-initend:
 	rts
 
 	;--------------------------------------------------------
@@ -301,16 +410,45 @@ digi2	MACRO
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
 
 	ENDM
+
+
+screen:
+	lea	bss_start,a0
+	lea	bss_end,a1
+	movem.l	black,d1-d7/a2-a6
+clear_loop:
+	movem.l	d1-d7/a2-a6,(a0)
+	movem.l	d1-d7/a2-a6,12*4(a0)
+	movem.l	d1-d7/a2-a6,24*4(a0)
+	lea	36*4(a0),a0
+	cmp.l	a0,a1
+	bpl.s	clear_loop
+
+	move.l	#screenmem,d0
+	add.l	#255,d0
+	and.l	#$ffff00,d0
+	move.l	d0,screenad
+	ror.l	#8,d0
+	lea	$ffff8201.w,a0
+	movep.w	d0,(a0)
+
+	lea	my_stack,sp
+	jsr	waitvbl
+
+
+
 	
 
-screen2:
 
 ;free d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 -- -- -- a7    usp
 	move	sr,-(sp)
 	move	#$2700,sr
 	move.l	sp,stack
-;	clr.b	lowbyte
 
+	tst.w	mfp_type
+	beq.s	mfp_is_ok
+	add.w	#55*2,other_mfp
+mfp_is_ok:
 	ifeq	bus
 	moveq	#57,d0
 	lea	endprg,a0
@@ -356,9 +494,10 @@ initdist:
 	move.l	#mwavetab,mnextcurv
 	move.l	mwavetab,mactcurv
 	move.l	#scrnadrs,nextscrn
-	move.l	#screen-230*20,cpybufdest
+	move.l	#ecran-230*20,cpybufdest
 
-;	bra	kaka
+
+	bra	kaka
 
 
 lupo:
@@ -448,9 +587,6 @@ kaka:
 	;********************************************************
 
 	lea	screenadr,a2
-;	move.b	lowbyte,3(a2)
-
-;	bsr	waitvbl		;lower border
 
 	move.b	$ffff8203.w,d0
 	lsl.w	#8,d0
@@ -509,7 +645,7 @@ __no_vbl:
 	movem.l d0-d6/a0,$ffff8240.w
 
 ;blaf	equ	174-55
-blaf	equ	174+4
+blaf	equ	174
 	move.w	#1500-30,d0
 opentopwait:
 	dbra	d0,opentopwait
@@ -526,7 +662,10 @@ loop:
 	move.l	(a6)+,d1				;~3
 	movep.l	d1,$ffff8800-512-downthere(a7)		;~7
 	endc
-	dcb	$4e71,blaf-4-1-20
+other_mfp:	equ	*+2
+	bra	my_mfp
+my_mfp:
+	dcb	$4e71,blaf-4-1-20-3
 	move.w	d7,digswitch
 	movem.l hwpalette,d2-d7/a1-a2
 	move.l	a1,usp
@@ -659,7 +798,7 @@ cont4:
 	bne	scrnok			;~12
 	lea	scrnadrs-nextscrn(a2),a0		;~12
 	move.l	(a0)+,d0		;~12
-;	move.l	#screen-(20*230)+160*6,cpybufdest-nextscrn(a2);~24
+;	move.l	#ecran-(20*230)+160*6,cpybufdest-nextscrn(a2);~24
 	dcb	$4e71,6
 _scrnok:
 	move.l	d0,logbase-nextscrn(a2)		;~20
@@ -2614,11 +2753,11 @@ endscrollcpy:
 *****************************************
 
 
-	move.b	#0,$fffffa19.w	;stop timer
-	move.b	#80,$fffffa1f.w	;244
-	move.b	#32,$fffffa07.w
-	move.b	#0,$fffffa0b.w	;clr pending
-	move.b	#2,$fffffa19.w
+;	move.b	#0,$fffffa19.w	;stop timer
+;	move.b	#80,$fffffa1f.w	;244
+;	move.b	#32,$fffffa07.w
+;	move.b	#0,$fffffa0b.w	;clr pending
+;	move.b	#2,$fffffa19.w
 
 
 	
@@ -2751,7 +2890,7 @@ bbb
 	move.l	a0,cpybufdest	;position to write during next vbl
 	cmp.l	#scrnadrs+4,nextscrn
 	bne.s	notreset
-	move.l	#screen-(15*230)+160*6,cpybufdest
+	move.l	#ecran-(15*230)+160*6,cpybufdest
 notreset:
 	;**********************************************************
 
@@ -2775,21 +2914,11 @@ notr:
 not5:
 	cmpi.b	#110,d0
 	bne.s	not2
-	ifeq overscan
 	addi.l	#-230,codmod+2
-	endc
-	ifne overscan
-	addi.l	#-160,codmod+2
-	endc
 not2:
 	cmpi.b	#104,d0
 	bne.s	not8
-	ifeq overscan
 	addi.l	#230,codmod+2
-	endc
-	ifne overscan
-	addi.l	#160,codmod+2
-	endc
 not8:
 	cmpi.b	#108,d0
 	bne.s	not6
@@ -2817,7 +2946,7 @@ notu:
 	cmpi.b	#57,d0
 	bne.s	no_key
 
-exit:
+myexit:
 	;restore digisound
 	move.w	#(256+512/4)-1,d0
 	lea	domino,a0
@@ -2827,10 +2956,7 @@ restdigi:
 	dbf	d0,restdigi
 
 
-
-	movea.l stack,sp
-	move	(sp)+,sr
-	rts
+	jmp	exit
 
 no_key:
 	lea	screenadr,a3
@@ -2946,7 +3072,7 @@ mbounceok:
 digiok:
 
 	digi1
-;	ifeq	test
+
 	lea	predigi,a0
 	move.l	a0,a1
 	moveq	#1,d0	
@@ -3010,8 +3136,7 @@ calcpredigi:
 	dcb	$4e71,70
 
 	move.l	a6,digiptr
-;	endc
-	dcb	$4e71,150
+
 	move.l	a1,a6
 	ifeq	digitest
 	move.w	#$777,$ffff8240.w
@@ -3038,7 +3163,7 @@ no_int:
 
 ;--------------------------------------------------------------
 
-	bsr	waitvbl
+	jsr	waitvbl
 
 	movem.l black,d0-d7
 	movem.l d0-d7,$ffff8240.w
@@ -6019,63 +6144,63 @@ hwbouncetab:
 	dc.w	-1
 scrbase	equ	0
 scrnadrs:
-	dc.l	screen-scrbase*230+64400*0
-	dc.l	screen-scrbase*230+64400*1
-	dc.l	screen-scrbase*230+64400*2
-	dc.l	screen-scrbase*230+64400*3
-	dc.l	screen-scrbase*230+64400*0+230*20
-	dc.l	screen-scrbase*230+64400*1+230*20
-	dc.l	screen-scrbase*230+64400*2+230*20
-	dc.l	screen-scrbase*230+64400*3+230*20
-	dc.l	screen-scrbase*230+64400*0+230*40
-	dc.l	screen-scrbase*230+64400*1+230*40
-	dc.l	screen-scrbase*230+64400*2+230*40
-	dc.l	screen-scrbase*230+64400*3+230*40
-	dc.l	screen-scrbase*230+64400*0+230*60
-	dc.l	screen-scrbase*230+64400*1+230*60
-	dc.l	screen-scrbase*230+64400*2+230*60
-	dc.l	screen-scrbase*230+64400*3+230*60
-	dc.l	screen-scrbase*230+64400*0+230*80
-	dc.l	screen-scrbase*230+64400*1+230*80
-	dc.l	screen-scrbase*230+64400*2+230*80
-	dc.l	screen-scrbase*230+64400*3+230*80
-	dc.l	screen-scrbase*230+64400*0+230*100
-	dc.l	screen-scrbase*230+64400*1+230*100
-	dc.l	screen-scrbase*230+64400*2+230*100
-	dc.l	screen-scrbase*230+64400*3+230*100
-	dc.l	screen-scrbase*230+64400*0+230*120
-	dc.l	screen-scrbase*230+64400*1+230*120
-	dc.l	screen-scrbase*230+64400*2+230*120
-	dc.l	screen-scrbase*230+64400*3+230*120
-	dc.l	screen-scrbase*230+64400*0+230*140
-	dc.l	screen-scrbase*230+64400*1+230*140
-	dc.l	screen-scrbase*230+64400*2+230*140
-	dc.l	screen-scrbase*230+64400*3+230*140
-	dc.l	screen-scrbase*230+64400*0+230*160
-	dc.l	screen-scrbase*230+64400*1+230*160
-	dc.l	screen-scrbase*230+64400*2+230*160
-	dc.l	screen-scrbase*230+64400*3+230*160
-	dc.l	screen-scrbase*230+64400*0+230*180
-	dc.l	screen-scrbase*230+64400*1+230*180
-	dc.l	screen-scrbase*230+64400*2+230*180
-	dc.l	screen-scrbase*230+64400*3+230*180
-	dc.l	screen-scrbase*230+64400*0+230*200
-	dc.l	screen-scrbase*230+64400*1+230*200
-	dc.l	screen-scrbase*230+64400*2+230*200
-	dc.l	screen-scrbase*230+64400*3+230*200
-	dc.l	screen-scrbase*230+64400*0+230*220
-	dc.l	screen-scrbase*230+64400*1+230*220
-	dc.l	screen-scrbase*230+64400*2+230*220
-	dc.l	screen-scrbase*230+64400*3+230*220
-	dc.l	screen-scrbase*230+64400*0+230*240
-	dc.l	screen-scrbase*230+64400*1+230*240
-	dc.l	screen-scrbase*230+64400*2+230*240
-	dc.l	screen-scrbase*230+64400*3+230*240
-	dc.l	screen-scrbase*230+64400*0+230*260
-	dc.l	screen-scrbase*230+64400*1+230*260
-	dc.l	screen-scrbase*230+64400*2+230*260
-;	dc.l	screen-scrbase*230+64400*3+230*260
-;	dc.l	screen-scrbase*230+64400*0+230*280
+	dc.l	ecran-scrbase*230+64400*0
+	dc.l	ecran-scrbase*230+64400*1
+	dc.l	ecran-scrbase*230+64400*2
+	dc.l	ecran-scrbase*230+64400*3
+	dc.l	ecran-scrbase*230+64400*0+230*20
+	dc.l	ecran-scrbase*230+64400*1+230*20
+	dc.l	ecran-scrbase*230+64400*2+230*20
+	dc.l	ecran-scrbase*230+64400*3+230*20
+	dc.l	ecran-scrbase*230+64400*0+230*40
+	dc.l	ecran-scrbase*230+64400*1+230*40
+	dc.l	ecran-scrbase*230+64400*2+230*40
+	dc.l	ecran-scrbase*230+64400*3+230*40
+	dc.l	ecran-scrbase*230+64400*0+230*60
+	dc.l	ecran-scrbase*230+64400*1+230*60
+	dc.l	ecran-scrbase*230+64400*2+230*60
+	dc.l	ecran-scrbase*230+64400*3+230*60
+	dc.l	ecran-scrbase*230+64400*0+230*80
+	dc.l	ecran-scrbase*230+64400*1+230*80
+	dc.l	ecran-scrbase*230+64400*2+230*80
+	dc.l	ecran-scrbase*230+64400*3+230*80
+	dc.l	ecran-scrbase*230+64400*0+230*100
+	dc.l	ecran-scrbase*230+64400*1+230*100
+	dc.l	ecran-scrbase*230+64400*2+230*100
+	dc.l	ecran-scrbase*230+64400*3+230*100
+	dc.l	ecran-scrbase*230+64400*0+230*120
+	dc.l	ecran-scrbase*230+64400*1+230*120
+	dc.l	ecran-scrbase*230+64400*2+230*120
+	dc.l	ecran-scrbase*230+64400*3+230*120
+	dc.l	ecran-scrbase*230+64400*0+230*140
+	dc.l	ecran-scrbase*230+64400*1+230*140
+	dc.l	ecran-scrbase*230+64400*2+230*140
+	dc.l	ecran-scrbase*230+64400*3+230*140
+	dc.l	ecran-scrbase*230+64400*0+230*160
+	dc.l	ecran-scrbase*230+64400*1+230*160
+	dc.l	ecran-scrbase*230+64400*2+230*160
+	dc.l	ecran-scrbase*230+64400*3+230*160
+	dc.l	ecran-scrbase*230+64400*0+230*180
+	dc.l	ecran-scrbase*230+64400*1+230*180
+	dc.l	ecran-scrbase*230+64400*2+230*180
+	dc.l	ecran-scrbase*230+64400*3+230*180
+	dc.l	ecran-scrbase*230+64400*0+230*200
+	dc.l	ecran-scrbase*230+64400*1+230*200
+	dc.l	ecran-scrbase*230+64400*2+230*200
+	dc.l	ecran-scrbase*230+64400*3+230*200
+	dc.l	ecran-scrbase*230+64400*0+230*220
+	dc.l	ecran-scrbase*230+64400*1+230*220
+	dc.l	ecran-scrbase*230+64400*2+230*220
+	dc.l	ecran-scrbase*230+64400*3+230*220
+	dc.l	ecran-scrbase*230+64400*0+230*240
+	dc.l	ecran-scrbase*230+64400*1+230*240
+	dc.l	ecran-scrbase*230+64400*2+230*240
+	dc.l	ecran-scrbase*230+64400*3+230*240
+	dc.l	ecran-scrbase*230+64400*0+230*260
+	dc.l	ecran-scrbase*230+64400*1+230*260
+	dc.l	ecran-scrbase*230+64400*2+230*260
+;	dc.l	ecran-scrbase*230+64400*3+230*260
+;	dc.l	ecran-scrbase*230+64400*0+230*280
 	dc.l	0
 openlowtab:
 ;	dc.b	2,2,2,2,2,2
@@ -6108,10 +6233,10 @@ wavetab:
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	byteschief
-	dc.l	nix
+	dc.l	_nix
 	dc.l	wordhinher
-	dc.l	nix
-	dc.l	nix
+	dc.l	_nix
+	dc.l	_nix
 	dc.l	hacker,hacker,hacker
 	dc.l	dreieck
 	dc.l	dreieck
@@ -6271,7 +6396,7 @@ byteschief:
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1,128
 hops1:	dc.w	1
-nix:	dc.w	0
+_nix:	dc.w	0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -6412,8 +6537,7 @@ space	equ	87
 	dc.b	g,g+1,o,o+1,t,t+1,space,t,t+1,h,h+1,e,e+1,space,n,n+1,a,a+1,m,m+1,e,e+1,space,r,r+1,i,i+1,g,g+1,h,h+1,t,t+1,fz,fz+1,kz,kz+1,space
 	dc.b	e,e+1,n,n+1,o,o+1,u,u+1,g,g+1,h,h+1,space,f,f+1,o,o+1,r,r+1,space,n,n+1,o,o+1,w,w+1,space,space,space,space
 	dc.b	b,b+1,y,y+1,e,e+1,space,az,az+1
-	
-	dc.b	space,space,space
+	dc.b	space
 scrolltext:
 ;	dc.b	zero,zero,zero,zero,zero,zero,zero,zero,0
 	dc.b	space,space,space,h,h+1,e,e+1,l,l+1,l,l+1,o,o+1,space,space
@@ -6446,7 +6570,6 @@ scrolltext:
 	dc.b	g,g+1,o,o+1,t,t+1,space,t,t+1,h,h+1,e,e+1,space,n,n+1,a,a+1,m,m+1,e,e+1,space,r,r+1,i,i+1,g,g+1,h,h+1,t,t+1,fz,fz+1,kz,kz+1,space
 	dc.b	e,e+1,n,n+1,o,o+1,u,u+1,g,g+1,h,h+1,space,f,f+1,o,o+1,r,r+1,space,n,n+1,o,o+1,w,w+1,space,space,space,space
 	dc.b	b,b+1,y,y+1,e,e+1,space,az,az+1
-	
 	dc.b	space,space,space
 	dc.b	0
 	dc.b	87,87
@@ -6488,10 +6611,16 @@ hwscrolldat:
 
 	incbin	"includes\hwscroll.dat"
 	even
-black:
-	ds.l 8
 
 	section	bss
+
+bss_start:		;here starts the bss
+
+screenad:	ds.l	1
+
+	ds.l	20
+my_stack:
+
 stack:	ds.l 1
 oldpal: ds.w 16
 oldres: ds.w 1
@@ -6558,15 +6687,13 @@ linebuffend:
 	ds.l	2*26*16+1+1+1
 	endr
 
+screenmem:
 	ds.w	230*6
-screen: 
+ecran: 
 	rept	5
 	ds.l 	15700
 	endr
 endprg:
+bss_end:		;here ends the bss
 	end
-
-
-
-
 

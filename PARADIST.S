@@ -1,7 +1,7 @@
 
 ; The Paralax distorter by Gunstick from Unlimited Matricks
 parallax	equ	0
-parallay	equ	0
+parallay	equ	10
 bus		equ	10
 digitest	equ	10
 
@@ -262,6 +262,8 @@ exit_with_408:
 	endc
 
 exit:
+	move.l	my_reset+2,$42a.w
+	move.l	$42a.w,my_reset+2
 	movem.l	black(pc),d0-d7
 	movem.l	d0-d7,$ffff8240.w
 
@@ -562,6 +564,7 @@ initdist:
 	move.l	#mwavetab,mnextcurv
 	move.l	mwavetab,mactcurv
 	move.l	#scrnadrs,nextscrn
+	move.l	scrnadrs,screenadr
 	move.l	#ecran-(15*230)+160*6,cpybufdest
 ;	move.l	#ecran-230*20,cpybufdest
 	lea	scrolltextend,a0
@@ -644,7 +647,7 @@ _no_vbl:
 	movep.w 0(a0),d1
 	cmp.w	d0,d1
 	bne.s	_no_vbl
-
+                                                                 
 	move.w	#4000,d0
 firsttopwait:
 	dbf	d0,firsttopwait
@@ -676,6 +679,9 @@ firsttopwait:
 
 	lea	predigi,a6
 	lea	mdistgraph,a5
+	move.w	mbouncetab,d0
+	lsl.w	#5,d0
+	add.w	d0,a5
 	lea	mdistadjust,a4
 	move.l	mdistcurvptr,a3
 looop:
@@ -2352,6 +2358,7 @@ mkdig1:
 	move.l	#dig1,digmod
 contdig1:
 	move.l	#hwbouncetab,hwbounceptr
+	move.l	#mbouncetab,mbounceptr
 	lea	digisound-2,a6
 	move.w	(a6)+,d7
 	bra.s	digiok
@@ -2366,6 +2373,7 @@ mkdig2:
 	move.l	#dig2,digmod
 contdig2:
 	move.l	#hwbouncetab,hwbounceptr
+	move.l	#mbouncetab,mbounceptr
 	lea	digisound2-2,a6
 	move.w	(a6)+,d7
 
@@ -2433,7 +2441,8 @@ calcpredigi:
 	move.l	(a7,d7),(a0)+
 	move.l	(a7,d7),(a0)+
 
-	dcb	70-20,$4e71
+	dcb	50,$4e71
+
 	tst.w	$1f0.w
 	bmi.s	noend
 	subq.w	#1,$1f0.w
@@ -4959,10 +4968,127 @@ mdistcurv:
 
 mbounceptr:
 	dc.l	mbouncetab
-mbouncetab:	;do not use 0
-	dc.w	2*1,2*1,2*2,2*1,2*2,2*2,2*3,2*2,2*3,2*3
-	dc.w	2*4,2*4,2*4,2*5,2*5,2*6,2*7,2*6,2*5,2*5
-	dc.w	2*4,2*4,2*4,2*3,2*3,2*2,2*3,2*2,2*2,2*2
+ mbouncetab:	;do not use 0
+	ifeq 1
+	dc.w	2*24
+	dc.w	2*24
+	dc.w	2*24
+	dc.w	2*24,2*24
+	dc.w	2*22,2*22
+	dc.w	2*20,2*20
+	dc.w	2*18,2*18
+	dc.w	2*16,2*16
+	dc.w	2*14
+	dc.w	2*14
+	dc.w	2*12
+	dc.w	2*12
+	dc.w	2*10
+	dc.w	2*8
+	dc.w	2*6
+	dc.w	2*4
+	dc.w	0
+	dc.w	2*4
+	dc.w	2*6
+	dc.w	2*8
+	dc.w	2*10
+	dc.w	2*12,2*12
+	dc.w	2*14,2*14
+	dc.w	2*16,2*16
+	dc.w	2*18,2*18
+	dc.w	2*20,2*20
+	dc.w	2*22,2*22
+	dc.w	2*24,2*24
+	dc.w	2*24,2*24
+
+	dc.w	2*24
+	dc.w	2*24
+	dc.w	2*24,2*24
+	dc.w	2*22,2*22
+	dc.w	2*20,2*20
+	dc.w	2*18,2*18
+	dc.w	2*16,2*16
+	dc.w	2*14
+	dc.w	2*14
+	dc.w	2*12
+	dc.w	2*12
+	dc.w	2*10
+	dc.w	2*8
+	dc.w	2*6
+	dc.w	2*4
+	dc.w	0
+	dc.w	2*4
+	dc.w	2*6
+	dc.w	2*8
+	dc.w	2*10
+	dc.w	2*12,2*12
+	dc.w	2*14,2*14
+	dc.w	2*16,2*16
+	dc.w	2*18,2*18
+	dc.w	2*20,2*20
+	dc.w	2*22,2*22
+	dc.w	2*24,2*24
+	dc.w	2*24,2*24
+	endc
+
+	dc.w	2*24
+	dc.w	2*24
+	dc.w	2*24
+	dc.w	2*23,2*23
+	dc.w	2*22,2*21
+	dc.w	2*20,2*19
+	dc.w	2*18,2*17
+	dc.w	2*16,2*15
+	dc.w	2*14
+	dc.w	2*13
+	dc.w	2*12
+	dc.w	2*11
+	dc.w	2*10
+	dc.w	2*8
+	dc.w	2*6
+	dc.w	2*4
+	dc.w	2
+	dc.w	2*4
+	dc.w	2*6
+	dc.w	2*8
+	dc.w	2*10
+	dc.w	2*11,2*12
+	dc.w	2*13,2*14
+	dc.w	2*15,2*16
+	dc.w	2*17,2*18
+	dc.w	2*19,2*20
+	dc.w	2*21,2*22
+	dc.w	2*23,2*23
+	dc.w	2*24,2*24
+
+	dc.w	2*24
+	dc.w	2*24
+	dc.w	2*23,2*23
+	dc.w	2*22,2*21
+	dc.w	2*20,2*19
+	dc.w	2*18,2*17
+	dc.w	2*16,2*15
+	dc.w	2*14
+	dc.w	2*13
+	dc.w	2*12
+	dc.w	2*11
+	dc.w	2*10
+	dc.w	2*8
+	dc.w	2*6
+	dc.w	2*4
+	dc.w	2
+	dc.w	2*4
+	dc.w	2*6
+	dc.w	2*8
+	dc.w	2*10
+	dc.w	2*11,2*12
+	dc.w	2*13,2*14
+	dc.w	2*15,2*16
+	dc.w	2*17,2*18
+	dc.w	2*19,2*20
+	dc.w	2*21,2*22
+	dc.w	2*23,2*23
+	dc.w	2*24,2*24
+
 	dc.w	-1
 
 hwbounceptr:	dc.l	hwbouncetab
@@ -5111,10 +5237,14 @@ inwavetab:
 	dc.l	_nix
 	dc.l	_nix
 	dc.l	_nix
-	dc.l	sinschief
-	dc.l	sinschief
-	dc.l	sinschief
-	dc.l	sinschief
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
 	dc.l	_nix
 	dc.l	boink
 	dc.l	_nix
@@ -5129,25 +5259,41 @@ wavetab:
 	dc.l	fast
 	dc.l	dreieck
 	dc.l	dreieck
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
+	dc.l	slowsin
 	dc.l	slowdist,slowdist,slowdist,slowdist
-	dc.l	sinus
-	dc.l	sinus
 	dc.l	sinschief
 	dc.l	sinschief
 	dc.l	bigsin
 	dc.l	bigsin
 	dc.l	sinschief
 	dc.l	sinschief
-	dc.l	sinus
-	dc.l	sinus
+	dc.l	slowdist,slowdist,slowdist,slowdist
+	dc.l	fast
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	_nix
+	dc.l	_nix
+	dc.l	_nix
+	dc.l	_nix
+	dc.l	_nix
+	dc.l	_nix
+	dc.l	_nix
 	dc.l	0	;end
 
 mwavetab:
+	dc.l	_nix,_nix,_nix,_nix
+	dc.l	_nix,_nix,_nix,_nix
 	dc.l	_nix,_nix,_nix,_nix
 	dc.l	sinschief
 	dc.l	sinschief
 	dc.l	bigsin
 	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
+	dc.l	bigsin
+	dc.l	bigsin
 	dc.l	bigsin
 	dc.l	bigsin
 	dc.l	slowdist
@@ -5157,6 +5303,9 @@ mwavetab:
 
 boink:
 	incbin	includes\boink.bin
+	dc.w	128
+slowsin:
+	incbin	includes\slowsin.bin
 	dc.w	128
 slowdist:
 	dc.w	0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1
@@ -5198,13 +5347,6 @@ slowdist:
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	128
 
-bytezurueck:
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
-	dc.w	128
 fast:
 	incbin	includes\fast.bin
 	dc.w	128
@@ -5215,32 +5357,6 @@ wordhinher:
 	dc.w	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 	dc.w	-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,128
 
-wordschief:
-	dc.w	2,2,2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2,2,2,128
-wordzurueck:
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
-	dc.w	-2,-2,-2,-2,-2,-2,-2,128
-	dc.w	0
-	dc.w	3,2,2,2,2,2,2,2,128
-byteschief:
-	dc.w	1,1,1,1,1,1,1,1
-	dc.w	1,1,1,1,1,1,1,1
-	dc.w	1,1,1,1,1,1,1,1
-	dc.w	1,1,1,1,1,1,1,1
-	dc.w	1,1,1,1,1,1,1,1,128
-hops1:	dc.w	1
 _nix:	dc.w	0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -5312,16 +5428,8 @@ dreieck:
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	1,1,1,1,1,1,1,1
 	dc.w	128	
-sinus:
-	dc.w	1,0,0,1,0,0,1,0,0,1,0,0,2,0,0,1,0,0,2,0,0,1,0,0,2,0,0,2
-	dc.w	0,0,2,0,0,2,0,0,3,0,0,2,0,0,3,0,0,2,0,0,3,0,0,3,0,0,3,0,0,3
-	dc.w	2,0,0,3,0,0,2,0,0,3,0,0,2,0,0,2,0,0,2,0,0,2,0,0,1,0,0,2,0,0,1,0,0,1,0,0,1,0,0,1
-	dc.w	0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,0,0,-1,0,0,0,0,0,-1
-	dc.w	-1,0,0,-1,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-2,0,0,-2,0,0,-3,0,0,-2
-	dc.w	-3,0,0,-3,0,0,-3,0,0,-2,0,0,-3,0,0,-2,0,0,-2,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,0,0,0,-1,0,0,0,0,0,0
-	dc.w	128
 bigsin:
-	incbin	includes\sinbigbi.n
+	incbin	includes\sinbig.bin
 	dc.w	128
 
 fuzzy
@@ -5454,4 +5562,6 @@ ecran:
 endprg:
 bss_end:		;here ends the bss
 	end
+
+
 

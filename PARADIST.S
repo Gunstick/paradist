@@ -6,8 +6,8 @@ overscan:equ 0
 ;make : distcalcloop4 and vor+rueck 2,3 + 4
 
 
-parallax	equ	0
-parallay	equ	0
+parallax	equ	10
+parallay	equ	10
 
 bus	equ	10
 
@@ -292,7 +292,7 @@ memtest:
 	dbf	d0,memtest
 	endc
 	;prepare digisound
-downthere	equ	$500
+downthere	equ	$600
 	move.w	#(256+512/4)-1,d0
 	lea	domino,a0
 	lea	downthere,a1
@@ -325,6 +325,9 @@ initdist:
 	move.l	a0,distwaveptr
 	move.l	#disttable,disttableptr
 	move.l	#mdistadjust,mdistadjustptr
+	move.l	#mdistcurv,mdistcurvptr
+	move.l	#mwavetab,mnextcurv
+	move.l	mwavetab,mactcurv
 	move.l	#scrnadrs,nextscrn
 	move.l	#screen-230*20,cpybufdest
 
@@ -461,7 +464,7 @@ firsttopwait:
 	
 	lea	mdistgraph,a5
 	lea	mdistadjust,a4
-	lea	mdistcurv,a3
+	move.l	mdistcurvptr,a3
 looop:
 ;	bsr	waitvbl
 
@@ -2728,7 +2731,37 @@ adjok:
 	digi2	
  	lea	mdistgraph,a5
 	move.l	mdistadjustptr,a4
+
+	move.l	mdistcurvptr,a3
+	addq.l	#2,a3
+	cmp.l	#mdistcurv+300*2,a3
+	blo.s	mcurvok
 	lea	mdistcurv,a3
+mcurvok:
+	move.l	a3,mdistcurvptr
+
+	move.l	mactcurv,a0
+	move.w	(a0)+,d0
+	cmp.w	#128,d0
+	bne.s	mcurvok2
+	move.l	mnextcurv,a0
+	move.l	(a0)+,d0
+	bne.s	mnextok
+	lea	mwavetab,a0
+	move.l	(a0)+,d0
+mnextok:
+	move.l	a0,mnextcurv
+	move.l	d0,a0
+	move.w	(a0)+,d0
+mcurvok2:
+	move.l	a0,mactcurv
+	add.w	d0,mdistcurvval
+	move.w	mdistcurvval,d0
+	andi.w	#7,d0
+	add.w	d0,d0
+	move.w	d0,(a3)
+	move.w	d0,300*2(a3)
+		
 	move.l	hwbounceptr,a0
 	move.w	-2(a0),d0
 	cmpi.w	#-1,d0
@@ -2742,6 +2775,19 @@ bounceok:
 	andi.w	#$ffff,d0
 	asl.w	#6,d0
 	adda.w	d0,a5
+	endc
+	ifne	parallay
+	move.l	mbounceptr,a0
+	move.w	(a0)+,d0
+	cmpi.w	#-1,d0
+	bne.s	mbounceok
+	lea	mbouncetab,a0
+	move.w	(a0)+,d0
+mbounceok:
+	move.l	a0,mbounceptr
+	add.w	d0,a3
+	lsl.w	#5,d0
+	add.w	d0,a5
 	endc
 
 	lea	15*2(a4),a4
@@ -2758,10 +2804,6 @@ bounceok:
 
 digiok:
 
-	digi1
-	dcb	$4e71,150
-	digi2
-	dcb	$4e71,150
 	digi1
 	dcb	$4e71,150
 	digi2
@@ -5657,7 +5699,7 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
 	endr
-
+;	rept	300/5
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
@@ -5683,6 +5725,7 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 
+;	endr
 
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
@@ -5706,10 +5749,17 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	
 mdistcurv:
 	rept	35
-	dc.w	2,2,2,2,2,2,2,2
+	dc.w	0,0,0,0,2,2,2,4,4,6,6,8,8,8,10,10,10,10,10,10,8,8,8,6,6,4,4,2,2,2,2,0
 	endr
 	dc.w	0,2,4,6,8,10,12,14
-;	dc.w	0,0,0,0,2,2,2,4,4,6,6,8,8,8,10,10,10,10,10,10,8,8,8,6,6,4,4,2,2,2,2,0
+
+mbounceptr:
+	dc.l	mbouncetab
+mbouncetab:
+	dc.w	2*0,2*0,2*1,2*0,2*1,2*1,2*2,2*1,2*2,2*2
+	dc.w	2*3,2*3,2*3,2*4,2*4,2*5,2*6,2*5,2*4,2*4
+	dc.w	2*3,2*3,2*3,2*2,2*2,2*1,2*2,2*1,2*1,2*1
+	dc.w	-1
 
 hwbounceptr:	dc.l	hwbouncetab
 hwbouncetab:
@@ -5717,9 +5767,12 @@ hwbouncetab:
 ;	dc.w	0,0,230,230,230*2,230,230,0,0,-1
 ;	dc.w	230*12,230*12
 ;	dc.w	230*12,230*12
-	dc.w	230*12,230*12
-	dc.w	230*12,230*12
-	dc.w	230*12,230*12
+	dc.w	230*12
+	dc.w	230*12
+	dc.w	230*12
+	dc.w	230*12
+	dc.w	230*12
+	dc.w	230*12
 	dc.w	230*12,230*12
 	dc.w	230*11,230*11
 	dc.w	230*10,230*10
@@ -5840,6 +5893,9 @@ wavetab:
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
 	dc.l	byteschief
 	dc.l	nix
 	dc.l	nix
@@ -5877,6 +5933,29 @@ wavetab:
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	0	;end
+
+mwavetab:
+;	dc.l	nix,nix,0
+	dc.l	sinschief
+	dc.l	sinschief
+	dc.l	bigsin
+	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
+	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
+	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
+	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
+	dc.l	bigsin
+	dc.l	bigsin
+	dc.l	slowdist
+	dc.l	slowdist
+	dc.l	slowdist
+	dc.l	slowdist
+	dc.l	slowdist
+	dc.l	slowdist
+	dc.l	slowdist
+	dc.l	slowdist
+	dc.l	wordschief
+	dc.l	0	;end
+
 hacker:
 	dc.w	2-1,-2,2,-2,2,-2,2,-2-1
 	dc.w	4,-4,4,-4,4,-4,4,-4-1
@@ -5949,14 +6028,14 @@ slowdist:
 	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	dc.w	128
 
-bytezurueck;
+bytezurueck:
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	128
-sinschief;
+sinschief:
 	dc.w	0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1
 	dc.w  0,0,1,0,0,1,0,0,2,0,0,1,0,0,1,0,0,2,0,0,2,0,0,2,0,0,2,0,0,1,0,0,1
 	dc.w 0,0,2,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128
@@ -6062,11 +6141,17 @@ sinus:
 	dc.w	-1,0,0,-1,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-2,0,0,-2,0,0,-2,0,0,-3,0,0,-2
 	dc.w	-3,0,0,-3,0,0,-3,0,0,-2,0,0,-3,0,0,-2,0,0,-2,0,0,-2,0,0,-1,0,0,-2,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,0,0,0,-1,0,0,0,0,0,0
 	dc.w	128
-bigsin:	dc.w	1,0,0,1,0,0,1,0,0,2,0,0,2,0,0,2,0,0,3,0,0,3,0,0,3,0,0,4,0,0,4,0,0,4
-	dc.w	5,0,0,5,0,0,5,0,0,4,0,0,4,0,0,3,0,0,3,0,0,2,0,0,2,0,0,1,0,0,1,0,0,0
-	dc.w	0,0,0,-1,0,0,-1,0,0,-2,0,0,-2,0,0,-3,0,0,-3,0,0,-4
-	dc.w	-4,0,0,-5,0,0,-5,0,0,-4,0,0,-4,0,0,-4,0,0,-3,0,0,-3
-	dc.w	-3,0,0,-2,0,0,-2,0,0,-2,0,0,-1,0,0,-1,0,0,-1,0,0,0,0,0,0,0,0,0,0,0,128
+bigsin:	dc.w	1,0,0,1,0,0,1,1,1,2,1,1,2,1,1,2,2,2,3,2,2,3,3,3,3,3,3
+	dc.w	3,3,3,3,3,3,3,3,2,3,3,2,2,2,1,2,2,1,1,1,0
+	dc.w	0,0,0,-1,0,0,-1,-1,-1,-2,-1,-1,-2,-2,-2,-3,-2,-2,-3,-3,-3
+	dc.w	-3,-3,-3,-3,-3,-3
+	dc.w	-3,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,0,-1,0,0,-1,0,0,0,0,0,128
+fuzzy
+	dc.w	0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7
+	dc.w	8,8,8,8,9,9,9,9,10,10,10,10,11,11,11,11,12,12,12,12,13,13,13,13
+	dc.w	14,14,14,14,15,15,15,15,16,16,16,16,17,17,17,17,18,18,18,18
+	dc.w	19,19,19,19,20,20,20,20,21,21,21,21,22,22,22,22,23,23,23,23
+	dc.w	128
 zero	equ	1
 one	equ	3
 two	equ	5
@@ -6119,13 +6204,25 @@ space	equ	87
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
 	dc.b	space,space
 scrolltext:
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	fz,fz+1,space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
 	dc.b	space,space,space,h,h+1,e,e+1,l,l+1,l,l+1,o,o+1,space,space
 	dc.b	t,t+1,h,h+1,i,i+1,s,s+1,space,space,i,i+1,s,s+1,space,space
 	dc.b	g,g+1,u,u+1,n,n+1,s,s+1,t,t+1,i,i+1,c,c+1,k,k+1,space,s,s+1
 	dc.b	space,space,space,r,r+1,e,e+1,v,v+1,o,o+1,l,l+1,u,u+1,t,t+1,i,i+1,o,o+1
 	dc.b	n,n+1,a,a+1,r,r+1,y,y+1,space,space,f,f+1,u,u+1,l,l+1,l,l+1,mi,mi+1
 	dc.b	s,s+1,c,c+1,r,r+1,e,e+1,e,e+1,n,n+1,mi,mi+1,s,s+1,c,c+1,r,r+1,e,e+1,e,e+1,n,n+1
-	dc.b	space,az,az+1,az,az+1,space,space,space,n,n+1,o,o+1,b,b+1,o,o+1,d,d+1,y,y+1
+	dc.b	space,az,az+1,az,az+1,space,space,space
+	dc.b	n,n+1,o,o+1,b,b+1,o,o+1,d,d+1,y,y+1
 	dc.b	space,space,c,c+1,a,a+1,n,n+1,space,space,b,b+1,e,e+1,a,a+1,t,t+1
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
 	dc.b	space,space,space
@@ -6203,7 +6300,14 @@ disttableptr:
 disttable:
 	ds.w	20*2	;scrolldisttable
 
-
+mactcurv:
+	ds.l	1	;ptr in active curve
+mnextcurv:
+	ds.l	1	;next mdist curv
+mdistcurvval:
+	ds.w	1	;curve
+mdistcurvptr:
+	ds.l	1
 mdistadjustptr:
 	ds.l	1	;pointer to the distorter adjust table
 mdistadjust:
@@ -6240,3 +6344,4 @@ endprg:
 
 
 
+ 

@@ -1,9 +1,15 @@
+backport	equ	10
+;********* what to do : 
+;     read predigi in hwscroll and distcalc loops
+
+
+
 overscan:equ 0
 ; Double Megadistorter by Gunstick   (c) ULM 1990
 ; we know! it's long, but it works ! And it's from ULM !!!
 
 
-
+test		equ	10
 parallax	equ	10
 parallay	equ	10
 
@@ -19,9 +25,17 @@ bus	equ	10
 	clr.w	-(sp)
 	trap	#1
 
-	dc.w	$c8*4
+;	dc.w	$c8*4
+;	dc.w	138*4
+;	dc.w	195*4
+;	dc.w	167*4
+	dc.w	197*4
 digisound:
-	incbin	"includes\telgraph.dmn"
+;	incbin	"includes\telgraph.dmn"
+;	incbin	"includes\jasy75.dmn"
+;	incbin	"includes\senn_l1.dmn"
+;	incbin	"includes\senn_l2.dmn"
+	incbin	"includes\luna.dmn"
 digiend:
 	even
 
@@ -485,7 +499,7 @@ __no_vbl:
 	movem.l d0-d6/a0,$ffff8240.w
 
 ;blaf	equ	174-55
-blaf	equ	174-55
+blaf	equ	174
 	move.w	#1500-30,d0
 opentopwait:
 	dbra	d0,opentopwait
@@ -690,6 +704,7 @@ disthigh	equ	20
 
 distwaveread:
 	;free: d4-d7/a2/a4-a7/usp
+
 	dcb	$4e71,25	;digi
 ;	digi1
 	calc_mdist2
@@ -729,7 +744,7 @@ _notnextwavetab:
 
 	;free: d1-d2/d4-d7/a0-a7/usp
 ;	digi2
-	dcb	$4e71,24	;digi
+	dcb	$4e71,24
 	calc_mdist2
 
 
@@ -2511,6 +2526,14 @@ o_endcpy:
 	bne	scrollcpy
 
 endscrollcpy:
+  ifne backport
+  move.b #0,$fffffa19.w
+  move.b #80,$fffffa1f.w
+  move.b #32,$fffffa07.w
+  move.b #0,$fffffa0b.w
+  move.b #2,$fffffa19.w
+  endc
+
 c0	equr	d0
 c1	equr	d1
 c2	equr	d2
@@ -2828,8 +2851,48 @@ mbounceok:
 digiok:
 
 	digi1
+;	ifeq	test
+	lea	predigi,a0
+	move.l	a0,a1
+	moveq	#1,d0	
+calcpredigi:
+	rept	2
+	;digi2
+	moveq	#-1,d6		;~1
+	move.b	(a6)+,d6	;~2
+	add.w	d6,d6		;~1
+	add.w	2(a7,d6),d7	;~4
+	andi.w	#$ff*4,d7	;~2
+	move.l	(a7,d7),(a0)+
+	move.l	(a7,d7),(a0)+
+
+	;digi1
+	moveq	#-1,d6
+	move.b	(a6),d6
+	add.w	d6,d6
+	add.w	(a7,d6),d7
+	andi.w	#$ff*4,d7
+	move.l	(a7,d7),(a0)+
+	move.l	(a7,d7),(a0)+
+	endr
+	move.l	(a1)+,d6
+	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+	dbf	d0,calcpredigi
+	;digi2
+	moveq	#-1,d6		;~1
+	move.b	(a6)+,d6	;~2
+	add.w	d6,d6		;~1
+	add.w	2(a7,d6),d7	;~4
+	andi.w	#$ff*4,d7	;~2
+	move.l	(a7,d7),(a0)+
+	move.l	(a7,d7),(a0)+
+
+;	endc
 	dcb	$4e71,150
-	digi2
+
+	move.l	(a1)+,d6
+	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+
 	move.w	#911,$ffff8240.w
 	move.b	#0,$fffffa0b.w	;clr pending
 no_int:
@@ -6305,7 +6368,8 @@ disttableptr:
 	ds.l	1	;pointer to scrolldisttable
 disttable:
 	ds.w	20*2	;scrolldisttable
-
+predigi:
+	ds.l	20	;20 lines predigitized (10*2 values)
 mactcurv:
 	ds.l	1	;ptr in active curve
 mnextcurv:

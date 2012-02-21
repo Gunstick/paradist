@@ -6,7 +6,7 @@ digitest	equ	10
 
 ;	config:
 
-def_version	equ	10
+def_version	equ	0
 d0_for_mcp	equ	0
 mcp_adr		equ	$500
 keyboard	set	10
@@ -60,6 +60,7 @@ start:
 	movem.l	black(pc),d0-d7
 	movem.l	d0-d7,$ffff8240.w
 
+
 	lea	oldvectors(pc),a0
 	move.l	$68.w,(a0)+
 	move.l	$70.w,(a0)+
@@ -100,7 +101,6 @@ start:
 	move.b	#2,$ffff820a.w
 
 	bsr	psginit
-
 	bsr	mfp_test
 
 	jmp	screen
@@ -163,7 +163,7 @@ back:
 
 	ifeq	def_version
 	moveq	#d0_for_mcp,d0
-	jsr	mcp_adr.w
+	jsr	mcp_adr+0.w
 	endc
 
 psginit:
@@ -282,15 +282,21 @@ black:		ds.l	16
 ;	dc.w	197*4
 ;	dc.w	167*4
 ;	dc.w	255*4
+	dc.w	128*4
 digisound:
 ;	incbin	"includes\telgraph.dmn"
 ;	incbin	"includes\jasy75.dmn"
-	incbin	"includes\senn_l1.dmn"
+;	incbin	"includes\senn_l1.dmn"
 ;	incbin	"includes\senn_l2.dmn"
 ;	incbin	"includes\luna.dmn"
 ;	incbin	"includes\luna2.dmn"
 ;	incbin	"includes\infinity.dmn"
+	incbin	"includes\you1.dmn"
 digiend:
+	dc.w	159*4
+digisound2:
+	incbin	"includes\you2.dmn"
+digiend2:
 	even
 
 font:
@@ -315,11 +321,11 @@ do_mdist	MACRO
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 	movem.l	d3/d4/d5,$ffff8250.w	;mdist
-;	dcb	$4e71,9
+;	dcb	9,$4e71
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d6,$ffff825c.w	;mdist
-;	dcb	$4e71,4
+;	dcb	4,$4e71
 	ENDM
 	
 
@@ -333,11 +339,11 @@ do_mdist2	MACRO
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 	movem.l	d4/d5/d6,$ffff8250.w	;mdist
-;	dcb	$4e71,9
+;	dcb	9,$4e71
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	a2,$ffff825c.w	;mdist
-;	dcb	$4e71,4
+;	dcb	4,$4e71
 	ENDM
 
 
@@ -351,15 +357,15 @@ do_mdist02	MACRO
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 	movem.l	d2/d4/d5,$ffff8250.w	;mdist
-;	dcb	$4e71,9
+;	dcb	9,$4e71
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
 	move.l	d6,$ffff825c.w	;mdist
-;	dcb	$4e71,4
+;	dcb	4,$4e71
 	ENDM
 
 	
-	dcb	$4e71,17-1-11
+	dcb	17-1-11,$4e71
 	moveq	#0,d7
 ; megadistorter test
 ;	lea	0(a0,d7),a0
@@ -410,7 +416,7 @@ digi2	MACRO
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
 
 	ENDM
-
+	even
 
 screen:
 	lea	bss_start,a0
@@ -474,7 +480,7 @@ prepdigi:
 	;**********************************************************
 	;	Distorted scroller by Gunstick
 	lea	linebuffbegin,a0
-	moveq	#25,d0	;26 lines are scrolled
+	moveq	#19,d0	;20 lines are scrolled
 initdist:
 	move.l	#scrolltext,textptr-linebuffbegin(a0)
 	move.l	a0,a1
@@ -496,30 +502,50 @@ initdist:
 	move.l	#scrnadrs,nextscrn
 	move.l	#ecran-230*20,cpybufdest
 
+	move.w	#$007,$ffff8240.w
 
-	bra	kaka
-
+;	bra	kaka
 
 lupo:
 	move.w	#74,d0
 ll2:
 	digi1
-	dcb	$4e71,512/2-22
+	move.w	#$070,$ffff8240.w
+	dcb	512/2-22,$4e71
 	digi2
-	dcb	$4e71,512/2-22-3
+	move.w	#$700,$ffff8240.w
+	dcb	512/2-22-3,$4e71
 	dbf	d0,ll2
 
-
+_digmod	equ	*+2
+	jmp	_dig1
+_dig1:
 	cmp.l	#digiend-75,a6
 	blo.s	_digiok
-	lea	digisound-2,a6
+	lea	digisound2-2,a6
 	move.w	(a6)+,d7
-
+	subq	#1,digcount
+	bhi.s	_digiok
+	move.w	2,digcount
+	move.l	#_dig2,_digmod
+	bra.s	_digiok
+_dig2:
+	cmp.l	#digiend2-75,a6
+	blo.s	_digiok
+	lea	digisound-2,a6
+	subq	#1,digcount
+	bhi.s	_digiok
+	move.w	(a6)+,d7
+	move.w	2,digcount
+	move.l	#_dig1,_digmod
 
 _digiok:
+	move.w	#$777,$ffff8240.w
+
 	btst	#0,$fffffc00.w
 	beq	lupo
 	move.l	a6,digiptr
+	move.w	#$707,$ffff8240.w
 	bra	kaka
 
 
@@ -649,7 +675,7 @@ blaf	equ	174
 	move.w	#1500-30,d0
 opentopwait:
 	dbra	d0,opentopwait
-	dcb	$4e71,90+122-16-blaf
+	dcb	90+122-16-blaf,$4e71
 
 loop:
 	ifeq	digitest
@@ -665,7 +691,7 @@ loop:
 other_mfp:	equ	*+2
 	bra	my_mfp
 my_mfp:
-	dcb	$4e71,blaf-4-1-20-3
+	dcb	blaf-4-1-20-3,$4e71
 	move.w	d7,digswitch
 	movem.l hwpalette,d2-d7/a1-a2
 	move.l	a1,usp
@@ -721,7 +747,7 @@ switchloop:
 	tst.b	(a0)+
 	bne.s	links1
 ;	move.b	#2,$ffff820a.w
-	dcb	$4e71,23		;-4*2
+	dcb	23		;-4*2,$4e71
 	bra.s	cont1
 
 links1:
@@ -729,15 +755,15 @@ links1:
 	move.b	#0,$ffff8260.w
 ;links1:
 ;	move.b	#2,$ffff820a.w
-	dcb	$4e71,9
+	dcb	9,$4e71
 	move.b	#2,$ffff8260.w
 	move.b	#0,$ffff8260.w
 cont1:
-	dcb	$4e71,28
+	dcb	28,$4e71
 intoall:
 	tst.b	(a0)+
 	bne.s	mitte
-	dcb	$4e71,6
+	dcb	6,$4e71
 	bra.s	cont3
 mitte:
 	move.b	#2,$ffff8260.w
@@ -754,22 +780,22 @@ cont3:
 	move.l	(a6)+,d1				;~3
 	movep.l	d1,$ffff8800-512-downthere(a7)		;~7
 	endc
-	dcb	$4e71,28-10
+	dcb	28-10,$4e71
 	tst.b	(a0)+
 	bne.s	rechts1
 	tst.b	(a0)+
 	bne.s	rechts2
-	dcb	$4e71,6
+	dcb	6,$4e71
 	bra.s	cont4
 
 rechts1:
 	move.b	#0,$ffff820a.w
 	addq.w	#1,a0
-	dcb	$4e71,3
+	dcb	3,$4e71
 	bra.s	cont4
 
 rechts2:
-	dcb	$4e71,4
+	dcb	4,$4e71
 	move.b	#0,$ffff820a.w
 cont4:
 	move.b	#2,$ffff820a.w
@@ -779,7 +805,7 @@ cont4:
 ;These lines are to be used if the screen uses left border
 
 	move.l	usp,a1	;get back this color
-	dcb	$4e71,3
+	dcb	3,$4e71
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
 	movem.l d2-d4,$ffff8240.w
@@ -799,7 +825,7 @@ cont4:
 	lea	scrnadrs-nextscrn(a2),a0		;~12
 	move.l	(a0)+,d0		;~12
 ;	move.l	#ecran-(20*230)+160*6,cpybufdest-nextscrn(a2);~24
-	dcb	$4e71,6
+	dcb	6,$4e71
 _scrnok:
 	move.l	d0,logbase-nextscrn(a2)		;~20
 	move.l	a0,(a2)		;~20
@@ -820,7 +846,7 @@ _hwbounceok:
 	move.l	d0,screenadr-nextscrn(a2);~16
 	endc
 	ifeq	bus
- 	dcb	$4e71,4
+ 	dcb	4,$4e71
 	endc
 
 	;free: d0-a7/usp
@@ -832,14 +858,14 @@ _hwbounceok:
 	move.b	#2,$ffff820a.w
 	bra.s	cont6
 scrnok:
-	dcb	$4e71,3-1+6
+	dcb	3-1+6,$4e71
 	bra 	_scrnok			;~12
 
 hwbounceok:
-	dcb	$4e71,0
+	dcb	0,$4e71
 	bra	_hwbounceok			;~12
 cont6:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 	;***** Do the 8 following distorter entrys **** 
@@ -863,7 +889,7 @@ disthigh	equ	20
 	
 
 	move.l	disttable+distspeed*2+7*4,disttable+7*4
-	dcb	$4e71,25-5-10
+	dcb	25-5-10,$4e71
 
 	ifeq	digitest
 	move.w	#$777,$ffff8240.w
@@ -879,13 +905,13 @@ disthigh	equ	20
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,6
+	dcb	6,$4e71
 	do_mdist
 	move.w	digswitch,d7
 ;	digi2
 	move.l	a6,usp			;~1
 	move.l	digiptr,a6
-	dcb	$4e71,27-4-5-1
+	dcb	27-4-5-1,$4e71
 
 	lea	disttable+disthigh*2-distspeed*2,a_1	;position to write new
 	move.l	distwaveptr,a_0		;position in the actual wave
@@ -897,7 +923,7 @@ disthigh	equ	20
 distwaveread:
 	;free: d4-d5/usp
 
-	dcb	$4e71,25-10-2	;digi
+	dcb	25-10-2	;digi,$4e71
 ;	digi1	
 	move.l	usp,a2			;~1
 
@@ -918,14 +944,14 @@ distwaveread:
 	move.b	#2,$ffff820a.w
 	bra.s	cont
 notnextwavetab:			;~12 time adjust
-	dcb	$4e71,20
+	dcb	20,$4e71
 	bra.s	_notnextwavetab	;~12
 notendwavetab:			;~12
 	bra.s	_notendwavetab	;~12
 	
 cont:
 	move.w	(a_0)+,d_1	;~8
-	dcb	$4e71,3-2
+	dcb	3-2,$4e71
 	do_mdist2
 	
 	cmp.w	#128,d_1	;~8
@@ -950,7 +976,7 @@ _notnextwavetab:
 
 	;free: d1-d2/d4-d7/a0-a7/usp
 ;	digi2
-	dcb	$4e71,24-10-1-1
+	dcb	24-10-1-1,$4e71
 	move.l	usp,a2			;~1
 	ifeq	digitest
 	move.w	#$777,$ffff8240.w
@@ -969,7 +995,7 @@ _notnextwavetab:
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	move.l	a_0,distwaveptr	;~20
-	dcb	$4e71,3-2
+	dcb	3-2,$4e71
 	do_mdist2
 	
 	move.w	d_3,distcalc	;~16
@@ -984,7 +1010,7 @@ distcalcloop:	;(~12)
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	move.w	(a_2)+,d_1	;~8
 	move.l	a_2,usp
-	dcb	$4e71,4
+	dcb	4,$4e71
 	move.w	(a_0),d_2	;~8	;read shift
 	add.w	d_1,d_2		;~4
 	bmi	rueckwaerts	;~12
@@ -994,7 +1020,7 @@ distcalcloop:	;(~12)
 	move.w	d_2,(a_0)	;~8	;write back new shift
 	moveq	#1,d_2
 noshift:
-	dcb	$4e71,6-2-3
+	dcb	6-2-3,$4e71
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	lea	back1(pc),a1	;2
 	digi1
@@ -1003,39 +1029,39 @@ do_all:
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
-	dcb	$4e71,41
-	dcb	$4e71,25	;digi
+	dcb	41,$4e71
+	dcb	25	;digi,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	jmp	(a1)		;2
 back1:
-	dcb	$4e71,41-2-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back2(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back2:
-	dcb	$4e71,41-4-2-2
+	dcb	41-4-2-2,$4e71
 	dbf	d_2,noshift
 
 	bra	indistcalcloop+2
 	
 indistcalcloop:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	$4e71,25-22	;digi
+	dcb	25-22	;digi,$4e71
 	digi1	
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	
-	dcb	$4e71,3
+	dcb	3,$4e71
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
@@ -1048,7 +1074,7 @@ distcalcloop2:	;(~12)
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	move.w	(a_2)+,d_1	;~8
 	move.l	a_2,usp
-	dcb	$4e71,4
+	dcb	4,$4e71
 	move.w	(a_0),d_2	;~8	;read shift
 	add.w	d_1,d_2		;~4
 	bmi	rueckwaerts2	;~12
@@ -1058,52 +1084,52 @@ distcalcloop2:	;(~12)
 	move.w	d_2,(a_0)	;~8	;write back new shift
 	moveq	#1,d_2
 noshift2:
-	dcb	$4e71,6+22
+	dcb	6+22,$4e71
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
-	dcb	$4e71,41-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back12(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back12:
-	dcb	$4e71,41-2-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back22(pc),a1	;2
 	digi1
 	jmp	do_all		;3
 back22:
-	dcb	$4e71,41-2-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back32(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back32:
-	dcb	$4e71,41-2
-	dcb	$4e71,25-22	;digi
+	dcb	41-2,$4e71
+	dcb	25-22	;digi,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
-	dcb	$4e71,41-2
+	dcb	41-2,$4e71
 	bra	indistcalcloop2+2
 	
 indistcalcloop2:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	$4e71,25	;digi
+	dcb	25	;digi,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	
-	dcb	$4e71,3
+	dcb	3,$4e71
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
@@ -1117,7 +1143,7 @@ distcalcloop3:	;(~12)
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	move.w	(a_2)+,d_1	;~8
 	move.l	a_2,usp
-	dcb	$4e71,4
+	dcb	4,$4e71
 	move.w	(a_0),d_2	;~8	;read shift
 	add.w	d_1,d_2		;~4
 	bmi	rueckwaerts3	;~12
@@ -1127,34 +1153,34 @@ distcalcloop3:	;(~12)
 	move.w	d_2,(a_0)	;~8	;write back new shift
 	moveq	#1,d_2
 noshift3:
-	dcb	$4e71,6-2-3
+	dcb	6-2-3,$4e71
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	lea	back13(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back13:
-	dcb	$4e71,41-2-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back23(pc),a1	;2
 	digi1
 	jmp	do_all		;3
 back23:
-	dcb	$4e71,41-4-2-2
+	dcb	41-4-2-2,$4e71
 	dbf	d_2,noshift3
 
 	bra	indistcalcloop3+2
 	
 indistcalcloop3:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	$4e71,25-22	;digi
+	dcb	25-22	;digi,$4e71
 	digi2	
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	
-	dcb	$4e71,3
+	dcb	3,$4e71
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
@@ -1169,7 +1195,7 @@ distcalcloop4:	;(~12)
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	move.w	(a_2)+,d_1	;~8
 	move.l	a_2,usp
-	dcb	$4e71,4
+	dcb	4,$4e71
 	move.w	(a_0),d_2	;~8	;read shift
 	add.w	d_1,d_2		;~4
 	bmi	rueckwaerts4	;~12
@@ -1179,52 +1205,52 @@ distcalcloop4:	;(~12)
 	move.w	d_2,(a_0)	;~8	;write back new shift
 	moveq	#1,d_2
 noshift4:
-	dcb	$4e71,6+22
+	dcb	6+22,$4e71
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
-	dcb	$4e71,41-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back14(pc),a1	;2
 	digi1
 	jmp	do_all		;3
 back14:
-	dcb	$4e71,41-2-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back24(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back24:
-	dcb	$4e71,41-2-2-3
-	dcb	$4e71,25-22	;digi
+	dcb	41-2-2-3,$4e71
+	dcb	25-22	;digi,$4e71
 	lea	back34(pc),a1	;2
 	digi1
 	jmp	do_all		;3
 back34:
-	dcb	$4e71,41-2
-	dcb	$4e71,25-22	;digi
+	dcb	41-2,$4e71
+	dcb	25-22	;digi,$4e71
 	digi2
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
-	dcb	$4e71,41-2
+	dcb	41-2,$4e71
 	bra	indistcalcloop4+2
 
 indistcalcloop4:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	$4e71,25	;digi
+	dcb	25	;digi,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	
-	dcb	$4e71,3
+	dcb	3,$4e71
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
@@ -1234,18 +1260,18 @@ indistcalcloop4:
 	
 	
 
-	dcb	$4e71,3
+	dcb	3,$4e71
 enddistcalc:
-	dcb	$4e71,41-20+5-3
+	dcb	41-20+5-3,$4e71
 
 
 	;free: d0-a7/usp  
-	dcb	$4e71,25-22	;digi
+	dcb	25-22	;digi,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	move.b	#2,$ffff820a.w
 
@@ -1275,14 +1301,14 @@ enddistcalc:
 
 
 
-;	dcb	$4e71,41-4-33
-	dcb	$4e71,25	;digi
+;	dcb	41-4-33,$4e71
+	dcb	25	;digi,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 ;	move.b	#$7,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 
 	bra	copydistscroll
@@ -1294,8 +1320,8 @@ enddistcalc:
 vorwaerts:
 	move.w	d_2,(a_0)	;~8 write back new shift
 	move.l	textptr-shift(a_0),a_1	;~16
-	dcb	$4e71,2
-	dcb	$4e71,25-22	;digi
+	dcb	2,$4e71
+	dcb	25-22	;digi,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1305,7 +1331,7 @@ nottextend:			;~12
 	addq.w	#1,a_1		;~8
 	bra	_nottextend	;~12
 cont2:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 	;movep : 5 nops weniger
@@ -1328,7 +1354,7 @@ cont2:
 _nottextend:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 ;	clr.b	d_1		;~4 C
-	dcb	$4e71,6-2-2-2
+	dcb	6-2-2-2,$4e71
 	lsl.w	#3,d_1	;~8
 ;	clr.b	d_2		;~4 K
 	lsl.w	#3,d_2	;~8
@@ -1350,7 +1376,7 @@ _nottextend:
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 
@@ -1364,23 +1390,23 @@ _nottextend:
 vorbufok:
 	addq.w	#4,bufcnt-shift(a_0)	;~16
 	addq.l	#8,bufptr-shift(a_0)	;~16
-	dcb	$4e71,9-5
+	dcb	9-5,$4e71
 vorbufnok:
-	dcb	$4e71,5
-	dcb	$4e71,2
+	dcb	5,$4e71
+	dcb	2,$4e71
 	
 
 call_shifter:	
 	;write first buffer
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~24
 	lea	26*8(a_1),a_1	;~8
-	dcb	$4e71,5
-	dcb	$4e71,25-22
+	dcb	5,$4e71
+	dcb	25-22,$4e71
 	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1	;~4
@@ -1414,11 +1440,11 @@ call_shifter:
 	lea	26*8(a_1),a_1	;~8
 
 
-	dcb	$4e71,25-13
+	dcb	25-13,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1	;~4
@@ -1440,14 +1466,14 @@ call_shifter:
  	addx.w	d1,d1	;~4	;b in
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
 	lea	26*8(a_1),a_1	;~8
-	dcb	$4e71,8-3
+	dcb	8-3,$4e71
 
-	dcb	$4e71,25-22
+	dcb	25-22,$4e71
 	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1	;~4
@@ -1480,11 +1506,11 @@ call_shifter:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
 	lea	26*8(a_1),a_1	;~8
 
-	dcb	$4e71,25-13
+	dcb	25-13,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1	;~4
@@ -1506,14 +1532,14 @@ call_shifter:
  	addx.w	d1,d1	;~4	;b in
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
 	lea	26*8(a_1),a_1	;~8
-	dcb	$4e71,8-3
+	dcb	8-3,$4e71
 
-	dcb	$4e71,25-22
+	dcb	25-22,$4e71
 	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1	;~4
@@ -1546,11 +1572,11 @@ call_shifter:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
 	lea	26*8(a_1),a_1	;~8
 
-	dcb	$4e71,25-13
+	dcb	25-13,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1	;~4
@@ -1572,16 +1598,16 @@ call_shifter:
  	addx.w	d1,d1	;~4	;b in
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~28
 	lea	26*8(a_1),a_1	;~8
-;	dcb	$4e71,8-3
+;	dcb	8-3,$4e71
 
-	dcb	$4e71,2
+	dcb	2,$4e71
 	bra	indistcalcloop	;~12   26 nops before right borde
 
 rueckwaerts:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
-	dcb	$4e71,2+7
-	dcb	$4e71,25-22	;digi
+	dcb	2+7,$4e71
+	dcb	25-22	;digi,$4e71
 	digi1
 	calc_mdist
 
@@ -1594,7 +1620,7 @@ rueckbufok:
 	DCB	$4E71,2
 	bra.s	_rueckbufok		;~12
 cont5:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 
@@ -1619,7 +1645,7 @@ _rueckbufok:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 ;	clr.b	d_1	;~4 E
 	lsl.w	#3,d_1	;~8
-	dcb	$4e71,7-2-2-2+2
+	dcb	7-2-2-2+2,$4e71
 ;	clr.b	d_2	;~4 A
 	lsl.w	#3,d_2	;~8
 	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
@@ -1630,7 +1656,7 @@ _rueckbufok:
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist02
 
 
@@ -1645,14 +1671,14 @@ _rueckbufok:
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
 
-	dcb	$4e71,5
+	dcb	5,$4e71
 	bra	call_shifter	
 
 vorwaerts2:
 	move.w	d_2,(a_0)
 	move.l	textptr-shift(a_0),a_1
-	dcb	$4e71,2
-	dcb	$4e71,25-17-3-1-1
+	dcb	2,$4e71
+	dcb	25-17-3-1-1,$4e71
 
 	moveq	#0,d_1
 	moveq	#0,d_2
@@ -1676,7 +1702,7 @@ nottextend2:			;~12
 	addq.w	#1,a_1		;~8
 	bra	_nottextend2	;~12
 cont22:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
@@ -1694,13 +1720,13 @@ cont22:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,23-22-1
+	dcb	23-22-1,$4e71
 	digi2
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 	cmpi.w	#25*4,bufcnt-shift(a_0)	;~16
 	blo.s	vorbufok2		;~8
@@ -1710,10 +1736,10 @@ cont22:
 vorbufok2:
 	addq.w	#4,bufcnt-shift(a_0)	;~16
 	addq.l	#8,bufptr-shift(a_0)	;~16
-	dcb	$4e71,9-5
+	dcb	9-5,$4e71
 vorbufnok2:
-	dcb	$4e71,5
-	dcb	$4e71,2
+	dcb	5,$4e71
+	dcb	2,$4e71
 call_shifter2:	
 	;write first buffer
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~24
@@ -1729,12 +1755,12 @@ call_shifter2:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,5
-	dcb	$4e71,25-18
+	dcb	5,$4e71
+	dcb	25-18,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -1758,12 +1784,12 @@ call_shifter2:
 	lea	26*8(a_1),a_1
 
 
-	dcb	$4e71,25-13+18-22
+	dcb	25-13+18-22,$4e71
 	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -1795,12 +1821,12 @@ call_shifter2:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
-	dcb	$4e71,25-18
+	dcb	8-3,$4e71
+	dcb	25-18,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -1823,12 +1849,12 @@ call_shifter2:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,25-13+18-22
+	dcb	25-13+18-22,$4e71
 	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -1860,13 +1886,13 @@ call_shifter2:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
+	dcb	8-3,$4e71
 
-	dcb	$4e71,25-18
+	dcb	25-18,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -1889,12 +1915,12 @@ call_shifter2:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,25-13+18-22
+	dcb	25-13+18-22,$4e71
 	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -1917,16 +1943,16 @@ call_shifter2:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-;	dcb	$4e71,8-3
+;	dcb	8-3,$4e71
 
-	dcb	$4e71,2
+	dcb	2,$4e71
 	bra	indistcalcloop2	;~12   26 nops before right borde
 
 rueckwaerts2:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
-	dcb	$4e71,2+7
-	dcb	$4e71,25-18-4	;digi
+	dcb	2+7,$4e71
+	dcb	25-18-4	;digi,$4e71
 	subq.w	#4,bufcnt-shift(a_0)	;~12
 	bhs.s	rueckbufok2		;~8
 	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
@@ -1942,7 +1968,7 @@ rueckbufok2:
 	DCB	$4E71,2
 	bra.s	_rueckbufok2		;~12
 cont52:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 	moveq	#0,d_1
@@ -1958,12 +1984,12 @@ cont52:
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
 
-	dcb	$4e71,7+18-22
+	dcb	7+18-22,$4e71
 	digi2
 	calc_mdist02
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist02
 	move.l	bufptr-shift(a_0),a_1	;~16
 	move.w	d_1,d_2		;~4
@@ -1975,15 +2001,15 @@ cont52:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,5
+	dcb	5,$4e71
 	bra	call_shifter2	
 
 
 vorwaerts3:
 	move.w	d_2,(a_0)
 	move.l	textptr-shift(a_0),a_1
-	dcb	$4e71,2
-	dcb	$4e71,25-22
+	dcb	2,$4e71
+	dcb	25-22,$4e71
 	digi2
 	calc_mdist
 
@@ -1995,7 +2021,7 @@ nottextend3:			;~12
 	addq.w	#1,a_1		;~8
 	bra	_nottextend3	;~12
 cont23:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 	moveq	#0,d_1
@@ -2013,7 +2039,7 @@ _nottextend3:
 ;	clr.b	d_1		;~4 C
 	lsl.w	#3,d_1	;~8
 ;	clr.b	d_2		;~4 K
-	dcb	$4e71,6-2-2-1
+	dcb	6-2-2-1,$4e71
 	lsl.w	#3,d_2	;~8
 	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
@@ -2032,7 +2058,7 @@ _nottextend3:
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 	cmpi.w	#25*4,bufcnt-shift(a_0)	;~16
 	blo.s	vorbufok3		;~8
@@ -2042,23 +2068,23 @@ _nottextend3:
 vorbufok3:
 	addq.w	#4,bufcnt-shift(a_0)	;~16
 	addq.l	#8,bufptr-shift(a_0)	;~16
-	dcb	$4e71,9-5
+	dcb	9-5,$4e71
 vorbufnok3:
-	dcb	$4e71,5
-	dcb	$4e71,2
+	dcb	5,$4e71
+	dcb	2,$4e71
 	
 
 call_shifter3:	
 	;write first buffer
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~24
 	lea	26*8(a_1),a_1	;~8
-	dcb	$4e71,5
-	dcb	$4e71,25-22
+	dcb	5,$4e71
+	dcb	25-22,$4e71
 	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1	
@@ -2092,11 +2118,11 @@ call_shifter3:
 	lea	26*8(a_1),a_1
 
 
-	dcb	$4e71,25-13
+	dcb	25-13,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2118,14 +2144,14 @@ call_shifter3:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
+	dcb	8-3,$4e71
 
-	dcb	$4e71,25-22
+	dcb	25-22,$4e71
 	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2158,11 +2184,11 @@ call_shifter3:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,25-13
+	dcb	25-13,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2184,14 +2210,14 @@ call_shifter3:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
+	dcb	8-3,$4e71
 
-	dcb	$4e71,25-22
+	dcb	25-22,$4e71
 	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2224,11 +2250,11 @@ call_shifter3:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,25-13
+	dcb	25-13,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2250,16 +2276,16 @@ call_shifter3:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-;	dcb	$4e71,8-3
+;	dcb	8-3,$4e71
 
-	dcb	$4e71,2
+	dcb	2,$4e71
 	bra	indistcalcloop3	;~12   26 nops before right borde
 
 rueckwaerts3:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
-	dcb	$4e71,2+7
-	dcb	$4e71,25-22	;digi
+	dcb	2+7,$4e71
+	dcb	25-22	;digi,$4e71
 	digi2
 	calc_mdist
 
@@ -2272,7 +2298,7 @@ rueckbufok3:
 	DCB	$4E71,2
 	bra.s	_rueckbufok3		;~12
 cont53:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 
@@ -2289,7 +2315,7 @@ _rueckbufok3:
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 	lsl.w	#3,d_1	;~8
-	dcb	$4e71,7-2-2
+	dcb	7-2-2,$4e71
 	lsl.w	#3,d_2	;~8
 	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
@@ -2298,7 +2324,7 @@ _rueckbufok3:
 	calc_mdist02
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist02
 	move.l	bufptr-shift(a_0),a_1	;~16
 	move.w	d_1,d_2		;~4
@@ -2310,15 +2336,15 @@ _rueckbufok3:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,5
+	dcb	5,$4e71
 	bra	call_shifter3	
 
 
 vorwaerts4:
 	move.w	d_2,(a_0)
 	move.l	textptr-shift(a_0),a_1
-	dcb	$4e71,2
-	dcb	$4e71,25-17-3-1-1
+	dcb	2,$4e71
+	dcb	25-17-3-1-1,$4e71
 
 	moveq	#0,d_1
 	moveq	#0,d_2
@@ -2342,7 +2368,7 @@ nottextend4:			;~12
 	addq.w	#1,a_1		;~8
 	bra	_nottextend4	;~12
 cont24:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
@@ -2360,13 +2386,13 @@ cont24:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,23-22-1
+	dcb	23-22-1,$4e71
 	digi1
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 	cmpi.w	#25*4,bufcnt-shift(a_0)	;~16
 	blo.s	vorbufok4		;~8
@@ -2376,10 +2402,10 @@ cont24:
 vorbufok4:
 	addq.w	#4,bufcnt-shift(a_0)	;~16
 	addq.l	#8,bufptr-shift(a_0)	;~16
-	dcb	$4e71,9-5
+	dcb	9-5,$4e71
 vorbufnok4:
-	dcb	$4e71,5
-	dcb	$4e71,2
+	dcb	5,$4e71
+	dcb	2,$4e71
 call_shifter4:	
 	;write first buffer
 
@@ -2396,12 +2422,12 @@ call_shifter4:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,5
-	dcb	$4e71,25-18
+	dcb	5,$4e71
+	dcb	25-18,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2425,12 +2451,12 @@ call_shifter4:
 	lea	26*8(a_1),a_1
 
 
-	dcb	$4e71,25-13+18-22
+	dcb	25-13+18-22,$4e71
 	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2462,12 +2488,12 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
-	dcb	$4e71,25-18
+	dcb	8-3,$4e71
+	dcb	25-18,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2490,12 +2516,12 @@ call_shifter4:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,25-13+18-22
+	dcb	25-13+18-22,$4e71
 	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2527,13 +2553,13 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
+	dcb	8-3,$4e71
 
-	dcb	$4e71,25-18
+	dcb	25-18,$4e71
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2556,12 +2582,12 @@ call_shifter4:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,25-13+18-22
+	dcb	25-13+18-22,$4e71
 	digi2
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist2
 
 	swap	d_1
@@ -2584,13 +2610,13 @@ call_shifter4:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	dcb	$4e71,2
+	dcb	2,$4e71
 	bra	indistcalcloop4	;~12   26 nops before right borde
 rueckwaerts4:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
-	dcb	$4e71,2+7
-	dcb	$4e71,25-18-4	;digi
+	dcb	2+7,$4e71
+	dcb	25-18-4	;digi,$4e71
 	subq.w	#4,bufcnt-shift(a_0)	;~12
 	bhs.s	rueckbufok4		;~8
 	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
@@ -2606,7 +2632,7 @@ rueckbufok4:
 	DCB	$4E71,2
 	bra.s	_rueckbufok4		;~12
 cont54:
-	dcb	$4e71,5-2
+	dcb	5-2,$4e71
 	do_mdist
 
 	moveq	#0,d_1
@@ -2622,12 +2648,12 @@ cont54:
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
 
-	dcb	$4e71,7+18-22
+	dcb	7+18-22,$4e71
 	digi1
 	calc_mdist02
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist02
 	move.l	bufptr-shift(a_0),a_1	;~16
 	move.w	d_1,d_2		;~4
@@ -2639,7 +2665,7 @@ cont54:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,5
+	dcb	5,$4e71
 	bra	call_shifter4	
 
 
@@ -2659,9 +2685,9 @@ copydistscroll:
 	move.w	#13,count		;scrollhigh:18
 	
 	
-	dcb	$4e71,21-1+3-22
+	dcb	21-1+3-22,$4e71
 	digi2
-	dcb	$4e71,22	;digi
+	dcb	22	;digi,$4e71
 ;	digi1
 	lea	buffer,a7
 	move.l	a7,usp
@@ -2671,9 +2697,9 @@ copydistscroll:
 ;	move.b	#$77,$ffff8240.w
 ;	move.b	#0,$ffff8240.w
 	lea	openlowtab,a1
-	dcb	$4e71,8-2-3
+	dcb	8-2-3,$4e71
 	do_mdist
-	dcb	$4e71,11
+	dcb	11,$4e71
 	bra.s	scrollcpy
 mul208:
 	dc.w	0,208,208*2,208*3,208*4,208*5,208*6,208*7,208*8
@@ -2690,18 +2716,18 @@ scrollcpy:
 ;;	move.l	d0,a0		;;weg
 ;;	nop
 	lea	downthere+512,a7
-;	dcb	$4e71,22	;digi
+;	dcb	22	;digi,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
-	dcb	$4e71,6-1-2
+	dcb	6-1-2,$4e71
 goto	equ	*+2
    	jmp	$00000000		;(a2)+ -> (a0)   uses d1-a1
 endcpy:
 	move.l	usp,a7
 	lea	230(a0),a0
-	dcb	$4e71,2-2
+	dcb	2-2,$4e71
 	do_mdist
 ;	move.b	#2,$ffff820a.w	;sicher is sicher: 50Hz
 	lea	linebuffend-linebuffbegin(a7),a7
@@ -2725,18 +2751,18 @@ o_scrollcpy:
 	lea	o_cpyjsr,a7	;;a1
 	move.l	(a7,d1),o_goto	;;a1
 	lea	downthere+512,a7
-;	dcb	$4e71,22	;digi
+;	dcb	22	;digi,$4e71
 	digi2
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
-	dcb	$4e71,6-1-2
+	dcb	6-1-2,$4e71
 o_goto	equ	*+2
    	jmp	$00000000		;(a2)+ -> (a0)   uses d1-a1
 o_endcpy:
 	move.l	usp,a7
 	lea	230(a0),a0
-	dcb	$4e71,2-2
+	dcb	2-2,$4e71
 	do_mdist
 	lea	linebuffend-linebuffbegin(a7),a7
 	move.l	a7,usp
@@ -3063,14 +3089,37 @@ mbounceok:
 	lea	64(a5),a5
 
 
+digmod	equ	*+2
+	jmp	dig1
+digcount	dc.w	1
+dig1:
 	cmp.l	#digiend-75,a6
 	blo.s	digiok
+	subq	#1,digcount
+	bmi.s	mkdig2
+	bra.s	contdig1
+mkdig1:
+	move.w	#1,digcount
+	move.l	#dig1,digmod
+contdig1:
 	lea	digisound-2,a6
+	move.w	(a6)+,d7
+	bra.s	digiok
+dig2:
+	cmp.l	#digiend2-75,a6
+	blo.s	digiok
+	subq	#1,digcount
+	bmi.s	mkdig1
+	bra.s	contdig2
+mkdig2:
+	move.w	#1,digcount
+	move.l	#dig2,digmod
+contdig2:
+	lea	digisound2-2,a6
 	move.w	(a6)+,d7
 
 
 digiok:
-
 	digi1
 
 	lea	predigi,a0
@@ -3133,7 +3182,7 @@ calcpredigi:
 	move.l	(a7,d7),(a0)+
 	move.l	(a7,d7),(a0)+
 
-	dcb	$4e71,70
+	dcb	70,$4e71
 
 	move.l	a6,digiptr
 
@@ -3176,10 +3225,10 @@ no_int:
 	move.w	#1500,d0
 opentopwait2:
 	dbra	d0,opentopwait2
-	dcb	$4e71,196-72-2
+	dcb	196-72-2,$4e71
 	move.b	#0,$ffff820a.w
 	move.w	#$007,$ffff8240.w
-	dcb	$4e71,8
+	dcb	8,$4e71
 	move.b	#2,$ffff820a.w
 
 
@@ -3587,7 +3636,7 @@ swnodigi	MACRO
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	ENDM
 
@@ -3596,7 +3645,7 @@ swdigi1	MACRO
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	ENDM
 swdigi2	MACRO
@@ -3604,14 +3653,14 @@ swdigi2	MACRO
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
-	dcb	$4e71,8-2
+	dcb	8-2,$4e71
 	do_mdist
 	ENDM
 
 cpy00:	;7,9,9,9,9,9
 	do_mdist
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,2
+	dcb	2,$4e71
 	nop
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,(a0)
@@ -3619,24 +3668,24 @@ cpy00:	;7,9,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*5(a0)
 	swnodigi
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,0
+	dcb	0,$4e71
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
 	move.l	(a2)+,4*19(a0)
 	swdigi2
-	dcb	$4e71,2
+	dcb	2,$4e71
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*20(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*26(a0)
 	swnodigi
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*33(a0)
 	swdigi1
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*40(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
@@ -3666,19 +3715,19 @@ cpy01:	;2+5,7,7,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*18(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*24(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*31(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*38(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*45(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3705,19 +3754,19 @@ cpy02:	;4+3,9,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*16(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*22(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*29(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*36(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*43(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3743,19 +3792,19 @@ cpy03:	;6+1,9,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*14(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*20(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*27(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*34(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*41(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3782,19 +3831,19 @@ cpy04:	;8,8,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*12(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*18(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*25(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*32(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*39(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3820,19 +3869,19 @@ cpy05:	;9,1+6,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*10(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*16(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*23(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*30(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*37(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3846,7 +3895,7 @@ cpy06:	;9,3+4,9,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*40(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*47(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -3859,19 +3908,19 @@ cpy06:	;9,3+4,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*8(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*14(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*21(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*28(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*35(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3884,7 +3933,7 @@ cpy07:	;9,5+2,9,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*38(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*45(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -3892,25 +3941,25 @@ cpy07:	;9,5+2,9,9,9,9
 	movem.l		c0,4*51(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*6(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*19(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*26(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*33(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3923,7 +3972,7 @@ cpy08:	;9,7,9,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*36(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*43(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -3931,25 +3980,25 @@ cpy08:	;9,7,9,9,9,9
 	movem.l		c0/c1/c2,4*49(a0)
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*10(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*17(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*24(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*31(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -3963,7 +4012,7 @@ cpy09:	;9,9,7,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*34(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*41(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -3971,25 +4020,25 @@ cpy09:	;9,9,7,9,9,9
 	movem.l		c0/c1/c2/c3/c4,4*47(a0)
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*2(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*8(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*15(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*22(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*29(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4003,31 +4052,31 @@ cpy10:	;9,9,2+5,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*32(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*39(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*45(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*0(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*6(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*13(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*20(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*27(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4041,14 +4090,14 @@ cpy11:	;9,9,4+3,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*30(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*37(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*43(a0)
 	move.l	(a2)+,50*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	move.l	(a2)+,51*4(a0)
@@ -4056,19 +4105,19 @@ cpy11:	;9,9,4+3,9,9,9
 	movem.l		c1/c2/c3/c4,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*4(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*11(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*18(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*25(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4081,14 +4130,14 @@ cpy12:	;9,9,6+1,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*28(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*35(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*41(a0)
 	move.l	(a2)+,48*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2
 	movem.l		c0/c1/c2,49*4(a0)
@@ -4096,19 +4145,19 @@ cpy12:	;9,9,6+1,9,9,9
 	movem.l		c1/c2,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*2(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*9(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*16(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*23(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4122,33 +4171,33 @@ cpy13:	;9,9,8,8,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*26(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*33(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*39(a0)
 	move.l	(a2)+,46*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,47*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,(a0)
-	dcb	$4e71,1+6-4
+	dcb	1+6-4,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*7(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*14(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*21(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4161,33 +4210,33 @@ cpy14:	;9,9,9,1+6,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*24(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*31(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*37(a0)
 	move.l	(a2)+,44*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,45*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,(a0)
-	dcb	$4e71,1+6-4
+	dcb	1+6-4,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*5(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*19(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4200,14 +4249,14 @@ cpy15:	;9,9,9,3+4,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*22(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*29(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*35(a0)
 	move.l	(a2)+,42*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,43*4(a0)
@@ -4215,19 +4264,19 @@ cpy15:	;9,9,9,3+4,9,9
 	movem.l		c0/c1,50*4(a0)
 	movem.l	(a2)+,c0/c1/c2
 	movem.l		c0/c1/c2,(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*3(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*10(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*17(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4240,14 +4289,14 @@ cpy16:	;9,9,9,5+2,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*20(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*27(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*33(a0)
 	move.l	(a2)+,40*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,41*4(a0)
@@ -4255,19 +4304,19 @@ cpy16:	;9,9,9,5+2,9,9
 	movem.l		c0/c1/c2/c3,48*4(a0)
 	movem.l	(a2)+,c0
 	movem.l		c0,(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*1(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*8(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*15(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4280,32 +4329,32 @@ cpy17:	;9,9,9,7,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*18(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*25(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*31(a0)
 	move.l	(a2)+,38*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,39*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,46*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,(a0)
-	dcb	$4e71,10+5-4
+	dcb	10+5-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*6(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*13(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4318,34 +4367,34 @@ cpy18:	;9,9,9,9,7,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*16(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*23(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*29(a0)
 	move.l	(a2)+,36*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,37*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,44*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,50*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,(a0)
-	dcb	$4e71,9-4
+	dcb	9-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*11(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4359,34 +4408,34 @@ cpy19:	;9,9,9,9,2+5,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*14(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*21(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*27(a0)
 	move.l	(a2)+,34*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,35*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,42*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,48*4(a0)
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,(a0)
-	dcb	$4e71,9-4
+	dcb	9-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*2(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*9(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4400,32 +4449,32 @@ cpy20:	;9,9,9,9,4+3,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*12(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*19(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*25(a0)
 	move.l	(a2)+,32*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,33*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,40*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,46*4(a0)
-	dcb	$4e71,1+6+7-4
+	dcb	1+6+7-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*7(a0)
-	dcb	$4e71,6+1-4
+	dcb	6+1-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4441,25 +4490,25 @@ cpy21:
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*10(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*17(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*23(a0)
 	move.l	(a2)+,30*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,31*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,38*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,44*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0
@@ -4468,7 +4517,7 @@ cpy21:
 	movem.l		c0/c1/c2/c3/c4,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*5(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4482,25 +4531,25 @@ cpy22:	;9,9,9,9,8,8
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*8(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*15(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*21(a0)
 	move.l	(a2)+,28*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,29*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,36*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,42*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2
@@ -4509,7 +4558,7 @@ cpy22:	;9,9,9,9,8,8
 	movem.l		c0/c1/c2,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*3(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4523,25 +4572,25 @@ cpy23:	;9,9,9,9,8,8
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*6(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*13(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*19(a0)
 	move.l	(a2)+,26*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,27*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,34*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,40*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4
@@ -4550,7 +4599,7 @@ cpy23:	;9,9,9,9,8,8
 	movem.l		c0,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,1*4(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4564,32 +4613,32 @@ cpy24:	;9,9,9,9,9,3+4
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*11(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*17(a0)
 	move.l	(a2)+,24*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,25*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,32*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,38*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,45*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,(a0)
-	dcb	$4e71,1+6+4-4
+	dcb	1+6+4-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4605,25 +4654,25 @@ cpy25:	;9,9,9,9,9,5+2
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*2(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*9(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*15(a0)
 	move.l	(a2)+,22*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi2
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,23*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,30*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,36*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -4632,7 +4681,7 @@ cpy25:	;9,9,9,9,9,5+2
 	movem.l		c0/c1,50*4(a0)
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,(a0)
-	dcb	$4e71,1+4-4
+	dcb	1+4-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4652,7 +4701,7 @@ o_cpyjsr:
 o_cpy00:	;7,9,9,9,9,9
 	do_mdist
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,2
+	dcb	2,$4e71
 	nop
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,(a0)
@@ -4660,24 +4709,24 @@ o_cpy00:	;7,9,9,9,9,9
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*5(a0)
 	swnodigi
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,0
+	dcb	0,$4e71
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
 	move.l	(a2)+,4*19(a0)
 	swdigi1
-	dcb	$4e71,2
+	dcb	2,$4e71
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*20(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*26(a0)
 	swnodigi
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*33(a0)
 	swdigi2
 	move.b	#2,$ffff820a.w
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*40(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
@@ -4707,19 +4756,19 @@ o_cpy01:	;2+5,7,7,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*18(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*24(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*31(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*38(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*45(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4746,19 +4795,19 @@ o_cpy02:	;4+3,9,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*16(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*22(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*29(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*36(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*43(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4784,19 +4833,19 @@ o_cpy03:	;6+1,9,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*14(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*20(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*27(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*34(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*41(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4823,19 +4872,19 @@ o_cpy04:	;8,8,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*12(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*18(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*25(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*32(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*39(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4861,19 +4910,19 @@ o_cpy05:	;9,1+6,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*10(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*16(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*23(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*30(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*37(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4887,7 +4936,7 @@ o_cpy06:	;9,3+4,9,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*40(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*47(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -4900,19 +4949,19 @@ o_cpy06:	;9,3+4,9,9,9,9
 	movem.l		c1/c2/c3/c4/c5/c6,4*8(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*14(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*21(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*28(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*35(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4925,7 +4974,7 @@ o_cpy07:	;9,5+2,9,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*38(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*45(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -4933,25 +4982,25 @@ o_cpy07:	;9,5+2,9,9,9,9
 	movem.l		c0,4*51(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*6(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*19(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*26(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*33(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -4964,7 +5013,7 @@ o_cpy08:	;9,7,9,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*36(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*43(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -4972,25 +5021,25 @@ o_cpy08:	;9,7,9,9,9,9
 	movem.l		c0/c1/c2,4*49(a0)
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*10(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*17(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*24(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*31(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5004,7 +5053,7 @@ o_cpy09:	;9,9,7,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*34(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*41(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
@@ -5012,25 +5061,25 @@ o_cpy09:	;9,9,7,9,9,9
 	movem.l		c0/c1/c2/c3/c4,4*47(a0)
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*2(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*8(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*15(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*22(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*29(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5044,31 +5093,31 @@ o_cpy10:	;9,9,2+5,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*32(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*39(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*45(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c1/c2/c3/c4/c5/c6
 	movem.l		c1/c2/c3/c4/c5/c6,4*0(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*6(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*13(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*20(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*27(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5082,14 +5131,14 @@ o_cpy11:	;9,9,4+3,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*30(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*37(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*43(a0)
 	move.l	(a2)+,50*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	move.l	(a2)+,51*4(a0)
@@ -5097,19 +5146,19 @@ o_cpy11:	;9,9,4+3,9,9,9
 	movem.l		c1/c2/c3/c4,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*4(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*11(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*18(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*25(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5122,14 +5171,14 @@ o_cpy12:	;9,9,6+1,9,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*28(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*35(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*41(a0)
 	move.l	(a2)+,48*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2
 	movem.l		c0/c1/c2,49*4(a0)
@@ -5137,19 +5186,19 @@ o_cpy12:	;9,9,6+1,9,9,9
 	movem.l		c1/c2,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*2(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*9(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*16(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*23(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5163,33 +5212,33 @@ o_cpy13:	;9,9,8,8,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*26(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*33(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*39(a0)
 	move.l	(a2)+,46*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,47*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,(a0)
-	dcb	$4e71,1+6-4
+	dcb	1+6-4,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*7(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*14(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*21(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5202,33 +5251,33 @@ o_cpy14:	;9,9,9,1+6,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*24(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*31(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*37(a0)
 	move.l	(a2)+,44*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,45*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,(a0)
-	dcb	$4e71,1+6-4
+	dcb	1+6-4,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*5(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*12(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*19(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5241,14 +5290,14 @@ o_cpy15:	;9,9,9,3+4,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*22(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*29(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*35(a0)
 	move.l	(a2)+,42*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,43*4(a0)
@@ -5256,19 +5305,19 @@ o_cpy15:	;9,9,9,3+4,9,9
 	movem.l		c0/c1,50*4(a0)
 	movem.l	(a2)+,c0/c1/c2
 	movem.l		c0/c1/c2,(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*3(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*10(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*17(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5281,14 +5330,14 @@ o_cpy16:	;9,9,9,5+2,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*20(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*27(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*33(a0)
 	move.l	(a2)+,40*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,41*4(a0)
@@ -5296,19 +5345,19 @@ o_cpy16:	;9,9,9,5+2,9,9
 	movem.l		c0/c1/c2/c3,48*4(a0)
 	movem.l	(a2)+,c0
 	movem.l		c0,(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*1(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*8(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*15(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5321,32 +5370,32 @@ o_cpy17:	;9,9,9,7,9,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*18(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*25(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*31(a0)
 	move.l	(a2)+,38*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,39*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,46*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,(a0)
-	dcb	$4e71,10+5-4
+	dcb	10+5-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*6(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*13(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5359,34 +5408,34 @@ o_cpy18:	;9,9,9,9,7,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*16(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*23(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*29(a0)
 	move.l	(a2)+,36*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,37*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,44*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,50*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,(a0)
-	dcb	$4e71,9-4
+	dcb	9-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*11(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5400,34 +5449,34 @@ o_cpy19:	;9,9,9,9,2+5,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*14(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*21(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*27(a0)
 	move.l	(a2)+,34*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,35*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,42*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,48*4(a0)
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,(a0)
-	dcb	$4e71,9-4
+	dcb	9-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*2(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*9(a0)
-	dcb	$4e71,6-4
+	dcb	6-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5441,32 +5490,32 @@ o_cpy20:	;9,9,9,9,4+3,9
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*12(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*19(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*25(a0)
 	move.l	(a2)+,32*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,33*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,40*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,46*4(a0)
-	dcb	$4e71,1+6+7-4
+	dcb	1+6+7-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*7(a0)
-	dcb	$4e71,6+1-4
+	dcb	6+1-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5482,25 +5531,25 @@ o_cpy21:
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*10(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*17(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*23(a0)
 	move.l	(a2)+,30*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,31*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,38*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,44*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0
@@ -5509,7 +5558,7 @@ o_cpy21:
 	movem.l		c0/c1/c2/c3/c4,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*5(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5523,25 +5572,25 @@ o_cpy22:	;9,9,9,9,8,8
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*8(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*15(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*21(a0)
 	move.l	(a2)+,28*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,29*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,36*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,42*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2
@@ -5550,7 +5599,7 @@ o_cpy22:	;9,9,9,9,8,8
 	movem.l		c0/c1/c2,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,4*3(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5564,25 +5613,25 @@ o_cpy23:	;9,9,9,9,8,8
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*6(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*13(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*19(a0)
 	move.l	(a2)+,26*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,27*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,34*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,40*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4
@@ -5591,7 +5640,7 @@ o_cpy23:	;9,9,9,9,8,8
 	movem.l		c0,(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4
 	movem.l		c0/c1/c2/c3/c4,1*4(a0)
-	dcb	$4e71,5-4
+	dcb	5-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5605,32 +5654,32 @@ o_cpy24:	;9,9,9,9,9,3+4
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*11(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*17(a0)
 	move.l	(a2)+,24*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,25*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,32*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,38*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,45*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3
 	movem.l		c0/c1/c2/c3,(a0)
-	dcb	$4e71,1+6+4-4
+	dcb	1+6+4-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5646,25 +5695,25 @@ o_cpy25:	;9,9,9,9,9,5+2
 	movem.l	c0/c1/c2/c3/c4/c5/c6,4*2(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,4*9(a0)
-	dcb	$4e71,1
+	dcb	1,$4e71
 	nop
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,4*15(a0)
 	move.l	(a2)+,22*4(a0)
-	dcb	$4e71,4-4
+	dcb	4-4,$4e71
 	swdigi1
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,23*4(a0)
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5
 	movem.l		c0/c1/c2/c3/c4/c5,30*4(a0)
-	dcb	$4e71,2
+	dcb	2,$4e71
 	swnodigi
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
 	movem.l		c0/c1/c2/c3/c4/c5/c6,36*4(a0)
-	dcb	$4e71,10-4
+	dcb	10-4,$4e71
 	swdigi2
 	move.b	#2,$ffff820a.w
 	movem.l	(a2)+,c0/c1/c2/c3/c4/c5/c6
@@ -5673,7 +5722,7 @@ o_cpy25:	;9,9,9,9,9,5+2
 	movem.l		c0/c1,50*4(a0)
 	movem.l	(a2)+,c0/c1
 	movem.l		c0/c1,(a0)
-	dcb	$4e71,1+4-4
+	dcb	1+4-4,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
@@ -5681,7 +5730,7 @@ o_cpy25:	;9,9,9,9,9,5+2
 
 	;
 	;**********************************************************
-
+	even
 	section	data
 
 
@@ -5970,12 +6019,7 @@ voltab:
 
 
 mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
-;	rept	300/13
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-
+	rept	100/14
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
@@ -6036,12 +6080,12 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
 
+	endr
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-;	endr
-	rept	300/5
+	rept	100/5
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
@@ -6068,7 +6112,11 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 
 	endr
-
+	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
+	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
+	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
+	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
+	rept	100/4
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
@@ -6088,7 +6136,7 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	
+	endr
 mdistcurv:
 	rept	35
 	dc.w	0,0,0,0,2,2,2,4,4,6,6,8,8,8,10,10,10,10,10,10,8,8,8,6,6,4,4,2,2,2,2,0
@@ -6109,9 +6157,9 @@ hwbouncetab:
 ;	dc.w	0,0,230,230,230*2,230,230,0,0,-1
 ;	dc.w	230*12,230*12
 ;	dc.w	230*12,230*12
-	dc.w	230*12
-	dc.w	230*12
-	dc.w	230*12
+;	dc.w	230*12
+;	dc.w	230*12
+;	dc.w	230*12
 	dc.w	230*12
 	dc.w	230*12
 	dc.w	230*12
@@ -6199,8 +6247,6 @@ scrnadrs:
 	dc.l	ecran-scrbase*230+64400*0+230*260
 	dc.l	ecran-scrbase*230+64400*1+230*260
 	dc.l	ecran-scrbase*230+64400*2+230*260
-;	dc.l	ecran-scrbase*230+64400*3+230*260
-;	dc.l	ecran-scrbase*230+64400*0+230*280
 	dc.l	0
 openlowtab:
 ;	dc.b	2,2,2,2,2,2
@@ -6220,10 +6266,6 @@ openlowtab:
 	dc.b	2,2,2,2,2,2
 	dc.b	2,2,2,2,2,2	;super-full: 222202
 
-	dc.b	2,2,2,2,2,2
-	dc.b	2,2,2,2,2,2
-	dc.b	2,2,2,2,2,2
-	dc.b	2,2,2,2,2,2
 	dc.b	2,2,2,2,2,2
 
 	even
@@ -6270,20 +6312,13 @@ wavetab:
 	dc.l	0	;end
 
 mwavetab:
+	dc.l	_nix,_nix,_nix,_nix
 	dc.l	sinschief
 	dc.l	sinschief
 	dc.l	bigsin
 	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
-	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
-	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
-	dc.l	fuzzy,fuzzy,fuzzy,fuzzy
 	dc.l	bigsin
 	dc.l	bigsin
-	dc.l	slowdist
-	dc.l	slowdist
-	dc.l	slowdist
-	dc.l	slowdist
-	dc.l	slowdist
 	dc.l	slowdist
 	dc.l	slowdist
 	dc.l	slowdist
@@ -6571,13 +6606,6 @@ scrolltext:
 	dc.b	e,e+1,n,n+1,o,o+1,u,u+1,g,g+1,h,h+1,space,f,f+1,o,o+1,r,r+1,space,n,n+1,o,o+1,w,w+1,space,space,space,space
 	dc.b	b,b+1,y,y+1,e,e+1,space,az,az+1
 	dc.b	space,space,space
-	dc.b	0
-	dc.b	87,87
-	dc.b	01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20
-	dc.b	21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40
-	dc.b	41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60
-	dc.b	61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80
-	dc.b	81,82,83,84,85,86,87
 	dc.b	0
 	even
 	;**********************************************************

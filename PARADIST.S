@@ -1,3 +1,4 @@
+
 ; The Paralax distorter by Gunstick from Unlimited Matricks
 parallax	equ	0
 parallay	equ	0
@@ -6,7 +7,7 @@ digitest	equ	10
 
 ;	config:
 
-def_version	equ	0
+def_version	equ	10
 d0_for_mcp	equ	0
 mcp_adr		equ	$500
 keyboard	set	10
@@ -453,7 +454,8 @@ clear_loop:
 
 	tst.w	mfp_type
 	beq.s	mfp_is_ok
-	add.w	#55*2,other_mfp
+	sub.w	#54*2,other_mfp
+	add.w	#54*2,other_mfp2
 mfp_is_ok:
 	ifeq	bus
 	moveq	#57,d0
@@ -502,9 +504,7 @@ initdist:
 	move.l	#scrnadrs,nextscrn
 	move.l	#ecran-230*20,cpybufdest
 
-	move.w	#$007,$ffff8240.w
-
-;	bra	kaka
+	bra	kaka
 
 lupo:
 	move.w	#74,d0
@@ -657,7 +657,7 @@ firsttopwait:
 	move.l	mdistcurvptr,a3
 looop:
 ;	bsr	waitvbl
-
+	clr.w	resync
 	move.b	$ffff8203.w,d0
 	lsl.w	#8,d0
 	lea	$ffff8207.w,a0
@@ -675,6 +675,11 @@ blaf	equ	174
 	move.w	#1500-30,d0
 opentopwait:
 	dbra	d0,opentopwait
+
+other_mfp:	equ	*+2
+	bra	my_mfp
+	dcb	55,$4e71
+my_mfp:
 	dcb	90+122-16-blaf,$4e71
 
 loop:
@@ -688,9 +693,9 @@ loop:
 	move.l	(a6)+,d1				;~3
 	movep.l	d1,$ffff8800-512-downthere(a7)		;~7
 	endc
-other_mfp:	equ	*+2
-	bra	my_mfp
-my_mfp:
+other_mfp2:	equ	*+2
+	bra	my_mfp2
+my_mfp2:
 	dcb	blaf-4-1-20-3,$4e71
 	move.w	d7,digswitch
 	movem.l hwpalette,d2-d7/a1-a2
@@ -698,7 +703,6 @@ my_mfp:
 	lea	$ffff8209.w,a1
 	moveq	#10,d1
 	movea.l tabentry,a0	;get back tablepos
-;	move.w	#$007,$ffff8240.w
 
 	ifeq	digitest
 	move.w	#$777,$ffff8240.w
@@ -747,7 +751,7 @@ switchloop:
 	tst.b	(a0)+
 	bne.s	links1
 ;	move.b	#2,$ffff820a.w
-	dcb	23		;-4*2,$4e71
+	dcb	23,$4e71
 	bra.s	cont1
 
 links1:
@@ -842,11 +846,13 @@ _hwbounceok:
 	move.l	a0,hwbounceptr-nextscrn(a2)		;~16
 	ext.l	d1			;~4
 	add.l	d1,d0			;~8
+cheatit:
 	ifne	bus
 	move.l	d0,screenadr-nextscrn(a2);~16
 	endc
 	ifeq	bus
- 	dcb	4,$4e71
+	clr.l	d0
+	clr.l	d0
 	endc
 
 	;free: d0-a7/usp
@@ -862,7 +868,6 @@ scrnok:
 	bra 	_scrnok			;~12
 
 hwbounceok:
-	dcb	0,$4e71
 	bra	_hwbounceok			;~12
 cont6:
 	dcb	5-2,$4e71
@@ -923,7 +928,7 @@ disthigh	equ	20
 distwaveread:
 	;free: d4-d5/usp
 
-	dcb	25-10-2	;digi,$4e71
+	dcb	25-10-2,$4e71
 ;	digi1	
 	move.l	usp,a2			;~1
 
@@ -1032,7 +1037,7 @@ do_all:
 	dcb	8-2,$4e71
 	do_mdist
 	dcb	41,$4e71
-	dcb	25	;digi,$4e71
+	dcb	25,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -1041,7 +1046,7 @@ do_all:
 	jmp	(a1)		;2
 back1:
 	dcb	41-2-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back2(pc),a1	;2
 	digi2
 	jmp	do_all		;3
@@ -1053,7 +1058,7 @@ back2:
 	
 indistcalcloop:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi1	
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1092,25 +1097,25 @@ noshift2:
 	dcb	8-2,$4e71
 	do_mdist
 	dcb	41-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back12(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back12:
 	dcb	41-2-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back22(pc),a1	;2
 	digi1
 	jmp	do_all		;3
 back22:
 	dcb	41-2-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back32(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back32:
 	dcb	41-2,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1122,7 +1127,7 @@ back32:
 	
 indistcalcloop2:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	25	;digi,$4e71
+	dcb	25,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -1160,7 +1165,7 @@ noshift3:
 	jmp	do_all		;3
 back13:
 	dcb	41-2-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back23(pc),a1	;2
 	digi1
 	jmp	do_all		;3
@@ -1172,7 +1177,7 @@ back23:
 	
 indistcalcloop3:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi2	
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1213,25 +1218,25 @@ noshift4:
 	dcb	8-2,$4e71
 	do_mdist
 	dcb	41-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back14(pc),a1	;2
 	digi1
 	jmp	do_all		;3
 back14:
 	dcb	41-2-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back24(pc),a1	;2
 	digi2
 	jmp	do_all		;3
 back24:
 	dcb	41-2-2-3,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	lea	back34(pc),a1	;2
 	digi1
 	jmp	do_all		;3
 back34:
 	dcb	41-2,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi2
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1243,7 +1248,7 @@ back34:
 
 indistcalcloop4:
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	dcb	25	;digi,$4e71
+	dcb	25,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -1266,7 +1271,7 @@ enddistcalc:
 
 
 	;free: d0-a7/usp  
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1302,7 +1307,7 @@ enddistcalc:
 
 
 ;	dcb	41-4-33,$4e71
-	dcb	25	;digi,$4e71
+	dcb	25,$4e71
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -1321,7 +1326,7 @@ vorwaerts:
 	move.w	d_2,(a_0)	;~8 write back new shift
 	move.l	textptr-shift(a_0),a_1	;~16
 	dcb	2,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1607,7 +1612,7 @@ rueckwaerts:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
 	dcb	2+7,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi1
 	calc_mdist
 
@@ -1617,7 +1622,7 @@ rueckwaerts:
 	bra.s	cont5
 rueckbufok:
 	subq.l	#8,bufptr-shift(a_0)	;~16
-	DCB	$4E71,2
+	DCB	2,$4E71
 	bra.s	_rueckbufok		;~12
 cont5:
 	dcb	5-2,$4e71
@@ -1952,7 +1957,7 @@ rueckwaerts2:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
 	dcb	2+7,$4e71
-	dcb	25-18-4	;digi,$4e71
+	dcb	25-18-4,$4e71
 	subq.w	#4,bufcnt-shift(a_0)	;~12
 	bhs.s	rueckbufok2		;~8
 	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
@@ -1965,7 +1970,7 @@ _rueckbufok2:
 	bra.s	cont52
 rueckbufok2:
 	subq.l	#8,bufptr-shift(a_0)	;~16
-	DCB	$4E71,2
+	DCB	2,$4E71
 	bra.s	_rueckbufok2		;~12
 cont52:
 	dcb	5-2,$4e71
@@ -2285,7 +2290,7 @@ rueckwaerts3:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
 	dcb	2+7,$4e71
-	dcb	25-22	;digi,$4e71
+	dcb	25-22,$4e71
 	digi2
 	calc_mdist
 
@@ -2295,7 +2300,7 @@ rueckwaerts3:
 	bra.s	cont53
 rueckbufok3:
 	subq.l	#8,bufptr-shift(a_0)	;~16
-	DCB	$4E71,2
+	DCB	2,$4E71
 	bra.s	_rueckbufok3		;~12
 cont53:
 	dcb	5-2,$4e71
@@ -2616,7 +2621,7 @@ rueckwaerts4:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
 	dcb	2+7,$4e71
-	dcb	25-18-4	;digi,$4e71
+	dcb	25-18-4,$4e71
 	subq.w	#4,bufcnt-shift(a_0)	;~12
 	bhs.s	rueckbufok4		;~8
 	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
@@ -2629,7 +2634,7 @@ _rueckbufok4:
 	bra.s	cont54
 rueckbufok4:
 	subq.l	#8,bufptr-shift(a_0)	;~16
-	DCB	$4E71,2
+	DCB	2,$4E71
 	bra.s	_rueckbufok4		;~12
 cont54:
 	dcb	5-2,$4e71
@@ -2687,7 +2692,7 @@ copydistscroll:
 	
 	dcb	21-1+3-22,$4e71
 	digi2
-	dcb	22	;digi,$4e71
+	dcb	22,$4e71
 ;	digi1
 	lea	buffer,a7
 	move.l	a7,usp
@@ -2716,7 +2721,7 @@ scrollcpy:
 ;;	move.l	d0,a0		;;weg
 ;;	nop
 	lea	downthere+512,a7
-;	dcb	22	;digi,$4e71
+;	dcb	22,$4e71
 	digi1
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
@@ -2748,15 +2753,17 @@ o_scrollcpy:
 	move.w	o_mul208(pc,d1),d1
 	lea	(a7,d1),a2
 	move.w	bufcnt-buffer(a7),d1
-	lea	o_cpyjsr,a7	;;a1
-	move.l	(a7,d1),o_goto	;;a1
-	lea	downthere+512,a7
-;	dcb	22	;digi,$4e71
+	lea	o_cpyjsr(pc),a7	;;a1
+	move.l	(a7,d1),o_goto-o_cpyjsr(a7)	;;a1
+	move.b	$ffff8207.w,d0
+	lea	downthere+512.w,a7
+;	dcb	22,$4e71
 	digi2
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	(a1)+,$ffff820a.w
-	dcb	6-1-2,$4e71
+	dcb	6-1-2-3,$4e71
+	move.b	d0,$70.w
 o_goto	equ	*+2
    	jmp	$00000000		;(a2)+ -> (a0)   uses d1-a1
 o_endcpy:
@@ -2777,8 +2784,20 @@ endscrollcpy:
 *****************************************
 *	end of the synchron part	*
 *****************************************
-
-
+	moveq	#0,d0
+	moveq	#0,d1
+	moveq	#0,d2
+	moveq	#0,d3
+	moveq	#0,d4
+	moveq	#0,d5
+	moveq	#0,d6
+	move.l	d6,a3
+	movem.l	d0-d6/a3,$ffff8240.w
+	move.b	$70.w,d0
+	cmp.b	$ffff8207.w,d0
+	bne.s	sok
+	move.w	#-1,resync
+sok:
 ;	move.b	#0,$fffffa19.w	;stop timer
 ;	move.b	#80,$fffffa1f.w	;244
 ;	move.b	#32,$fffffa07.w
@@ -2926,6 +2945,16 @@ notreset:
 
 	move.b	$fffffc02.w,d0
 
+	move.l	cheatcodepos,a0
+	cmp.b	(a0)+,d0
+	beq.s	cheatok
+	lea	cheatcode,a0
+cheatok:
+	move.l	a0,cheatcodepos
+	tst.b	(a0)
+	bne.s	notendcheat
+	move.l	#$42804280,cheatit
+notendcheat:
 	cmpi.b	#99,d0
 	bne.s	notl
 	addi.l	#16,codmod+2
@@ -2969,6 +2998,11 @@ not4:
 	lea	screenadr,a3
 	move.b	lowbyte,3(a3)
 notu:
+	cmpi.b	#1,d0
+	bne.s	no_esc
+cheatcodmod:	equ	*+2
+	move.l	#$2540ffe6,cheatit
+no_esc:
 	cmpi.b	#57,d0
 	bne.s	no_key
 
@@ -3064,11 +3098,15 @@ bounceok:
 	ext.l	d0
 	divs	#230/2,d0
 	adda.w	d0,a4
+
 	ifeq	parallay
 	andi.w	#$ffff,d0
-	asl.w	#6,d0
-	adda.w	d0,a5
+	add.w	d0,d0
+	add.w	d0,a3
+	lsl.w	#5,d0
+	adda.w	d0,a5	;grafikadress
 	endc
+
 	ifne	parallay
 	move.l	mbounceptr,a0
 	move.w	(a0)+,d0
@@ -3084,6 +3122,7 @@ mbounceok:
 	endc
 
 	lea	15*2(a4),a4
+	lea	2(a3),a3
 	calc_mdist
 	movem.l	d3/d4/d5/d6,hwpalette+16
 	lea	64(a5),a5
@@ -3199,6 +3238,10 @@ calcpredigi:
 	endc
 	
 	move.w	#911,$ffff8240.w
+	tst.w	resync
+	bne	looop
+
+sco
 	move.b	#0,$fffffa0b.w	;clr pending
 no_int:
 	tst.b	$fffffa0b.w
@@ -5754,264 +5797,7 @@ domino:
 	dc.w	$03E0,$03E0,$03F0,$03E0,$03F8,$03E0,$03FC,$03F0,$03F0,$03F8,$03F0,$03FC,$03F8,$03F8,$03FC,$03FC
 voltab:	
 ;         Soundtable from 68000 ST-Magazin
- dc.w $0800,$0900
- dc.w $0801,$0900
- dc.w $0802,$0900
- dc.w $0801,$0901
- dc.w $0802,$0901
- dc.w $0801,$0902
- dc.w $0802,$0902
- dc.w $0803,$0903
- dc.w $0804,$0901
- dc.w $0805,$0900
- dc.w $0805,$0901
- dc.w $0805,$0902
- dc.w $0805,$0902
- dc.w $0806,$0900
- dc.w $0806,$0901
- dc.w $0805,$0903
- dc.w $0806,$0902
- dc.w $0807,$0900
- dc.w $0807,$0901
- dc.w $0806,$0904
- dc.w $0806,$0904
- dc.w $0806,$0904
- dc.w $0806,$0905
- dc.w $0806,$0905
- dc.w $0806,$0905
- dc.w $0806,$0906
- dc.w $0806,$0906
- dc.w $0806,$0906
- dc.w $0807,$0905
- dc.w $0807,$0905
- dc.w $0807,$0906
- dc.w $0807,$0906
- dc.w $0807,$0906
- dc.w $0807,$0906
- dc.w $0807,$0907
- dc.w $0807,$0907
- dc.w $0807,$0907
- dc.w $0807,$0907
- dc.w $0808,$0906
- dc.w $0808,$0906
- dc.w $0808,$0906
- dc.w $0808,$0906
- dc.w $0808,$0907
- dc.w $0808,$0907
- dc.w $0808,$0907
- dc.w $0808,$0907
- dc.w $0809,$0906
- dc.w $0809,$0906
- dc.w $0809,$0906
- dc.w $0809,$0906
- dc.w $0809,$0906
- dc.w $0809,$0907
- dc.w $0809,$0907
- dc.w $0809,$0907
- dc.w $0809,$0907
- dc.w $080A,$0902
- dc.w $080A,$0903
- dc.w $080A,$0904
- dc.w $080A,$0904
- dc.w $080A,$0904
- dc.w $080A,$0905
- dc.w $080A,$0905
- dc.w $080A,$0906
- dc.w $080A,$0906
- dc.w $080A,$0906
- dc.w $080A,$0906
- dc.w $080A,$0907
- dc.w $080A,$0907
- dc.w $080A,$0907
- dc.w $080A,$0907
- dc.w $080A,$0907
- dc.w $080A,$0907
- dc.w $080A,$0907
- dc.w $080A,$0908
- dc.w $080A,$0908
- dc.w $080B,$0904
- dc.w $080B,$0904
- dc.w $080B,$0905
- dc.w $080B,$0905
- dc.w $080B,$0905
- dc.w $080B,$0906
- dc.w $080B,$0906
- dc.w $080B,$0906
- dc.w $080B,$0906
- dc.w $080B,$0906
- dc.w $080B,$0906
- dc.w $080B,$0907
- dc.w $080B,$0907
- dc.w $080B,$0907
- dc.w $080B,$0907
- dc.w $080B,$0907
- dc.w $080B,$0908
- dc.w $080B,$0908
- dc.w $080B,$0908
- dc.w $080B,$0908
- dc.w $080B,$0908
- dc.w $080B,$0908
- dc.w $080B,$0908
- dc.w $080B,$0909
- dc.w $080B,$0909
- dc.w $080B,$0909
- dc.w $080B,$0909
- dc.w $080B,$0909
- dc.w $080B,$0909
- dc.w $080B,$0909
- dc.w $080C,$0900
- dc.w $080C,$0901
- dc.w $080C,$0902
- dc.w $080C,$0903
- dc.w $080C,$0903
- dc.w $080C,$0904
- dc.w $080C,$0904
- dc.w $080C,$0904
- dc.w $080C,$0905
- dc.w $080C,$0905
- dc.w $080C,$0906
- dc.w $080C,$0906
- dc.w $080C,$0906
- dc.w $080C,$0906
- dc.w $080C,$0906
- dc.w $080C,$0907
- dc.w $080C,$0907
- dc.w $080C,$0907
- dc.w $080C,$0907
- dc.w $080C,$0907
- dc.w $080C,$0908
- dc.w $080C,$0908
- dc.w $080C,$0908
- dc.w $080C,$0908
- dc.w $080C,$0908
- dc.w $080C,$0908
- dc.w $080C,$0908
- dc.w $080C,$0908
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$0909
- dc.w $080C,$090A
- dc.w $080C,$090A
- dc.w $080C,$090A
- dc.w $080C,$090A
- dc.w $080C,$090A
- dc.w $080C,$090A
- dc.w $080C,$090A
- dc.w $080C,$090A
- dc.w $080D,$0900
- dc.w $080D,$0901
- dc.w $080D,$0901
- dc.w $080D,$0902
- dc.w $080D,$0902
- dc.w $080D,$0903
- dc.w $080D,$0903
- dc.w $080D,$0904
- dc.w $080D,$0904
- dc.w $080D,$0905
- dc.w $080D,$0905
- dc.w $080D,$0906
- dc.w $080D,$0906
- dc.w $080D,$0907
- dc.w $080D,$0907
- dc.w $080D,$0907
- dc.w $080D,$0907
- dc.w $080D,$0907
- dc.w $080D,$0908
- dc.w $080D,$0908
- dc.w $080D,$0908
- dc.w $080D,$0908
- dc.w $080D,$0908
- dc.w $080D,$0908
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$0909
- dc.w $080D,$090A
- dc.w $080D,$090A
- dc.w $080D,$090A
- dc.w $080D,$090A
- dc.w $080D,$090A
- dc.w $080D,$090A
- dc.w $080D,$090A
- dc.w $080D,$090A
- dc.w $080C,$090C
- dc.w $080C,$090C
- dc.w $080C,$090C
- dc.w $080C,$090C
- dc.w $080C,$090C
- dc.w $080C,$090C
- dc.w $080C,$090C
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090B
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080D,$090C
- dc.w $080E,$0906
- dc.w $080E,$0906
- dc.w $080E,$0907
- dc.w $080E,$0907
- dc.w $080E,$0907
- dc.w $080E,$0908
- dc.w $080E,$0908
- dc.w $080E,$0908
- dc.w $080E,$0908
- dc.w $080E,$0908
- dc.w $080E,$0909
- dc.w $080E,$0909
- dc.w $080E,$0909
- dc.w $080E,$090A
- 
-
+	incbin	includes\powervol.bin
 
 	;**********************************************************
 	;	Distorted scroller by Gunstick
@@ -6019,136 +5805,20 @@ voltab:
 
 
 mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
-	rept	100/14
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-
-	dc.w	$113,$114,$225,$447,$447,$114,$007,$007
-	dc.w	$113,$114,$225,$447,$447,$114,$007,$007
-	dc.w	$113,$114,$225,$447,$447,$114,$007,$007
-	dc.w	$113,$114,$225,$447,$447,$114,$007,$007
-
-	dc.w	$113,$114,$225,$447,$114,$007,$113,$007
-	dc.w	$113,$114,$225,$447,$114,$007,$113,$007
-	dc.w	$113,$114,$225,$447,$114,$007,$113,$007
-	dc.w	$113,$114,$225,$447,$114,$007,$113,$007
-
-	dc.w	$113,$114,$225,$114,$007,$113,$114,$007
-	dc.w	$113,$114,$225,$114,$007,$113,$114,$007
-	dc.w	$113,$114,$225,$114,$007,$113,$114,$007
-	dc.w	$113,$114,$225,$114,$007,$113,$114,$007
-
-	dc.w	$113,$114,$114,$007,$113,$225,$114,$007
-	dc.w	$113,$114,$114,$007,$113,$225,$114,$007
-	dc.w	$113,$114,$114,$007,$113,$225,$114,$007
-	dc.w	$113,$114,$114,$007,$113,$225,$114,$007
-
-	dc.w	$113,$114,$007,$113,$225,$447,$114,$007
-	dc.w	$113,$114,$007,$113,$225,$447,$114,$007
-	dc.w	$113,$114,$007,$113,$225,$447,$114,$007
-	dc.w	$113,$114,$007,$113,$225,$447,$114,$007
-
-	dc.w	$113,$007,$113,$225,$447,$447,$114,$007
-	dc.w	$113,$007,$113,$225,$447,$447,$114,$007
-	dc.w	$113,$007,$113,$225,$447,$447,$114,$007
-	dc.w	$113,$007,$113,$225,$447,$447,$114,$007
-
-	dc.w	$003,$113,$225,$447,$447,$447,$114,$007
-	dc.w	$003,$113,$225,$447,$447,$447,$114,$007
-	dc.w	$003,$113,$225,$447,$447,$447,$114,$007
-	dc.w	$003,$113,$225,$447,$447,$447,$114,$007
-
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
-
-	endr
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	rept	100/5
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-
-	dc.w	$700,$000,$000,$000,$070,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$070,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$070,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$070,$000,$000,$000
-	
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
-
-	endr
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	rept	100/4
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
-	endr
+	incbin	includes\colors.bin
 mdistcurv:
 	rept	35
-	dc.w	0,0,0,0,2,2,2,4,4,6,6,8,8,8,10,10,10,10,10,10,8,8,8,6,6,4,4,2,2,2,2,0
+	dc.w	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+;	dc.w	0,0,0,0,2,2,2,4,4,6,6,8,8,8,10,10,10,10,10,10,8,8,8,6,6,4,4,2,2,2,2,0
 	endr
 	dc.w	0,2,4,6,8,10,12,14
 
 mbounceptr:
 	dc.l	mbouncetab
-mbouncetab:
-	dc.w	2*0,2*0,2*1,2*0,2*1,2*1,2*2,2*1,2*2,2*2
-	dc.w	2*3,2*3,2*3,2*4,2*4,2*5,2*6,2*5,2*4,2*4
-	dc.w	2*3,2*3,2*3,2*2,2*2,2*1,2*2,2*1,2*1,2*1
+mbouncetab:	;do not use 0
+	dc.w	2*1,2*1,2*2,2*1,2*2,2*2,2*3,2*2,2*3,2*3
+	dc.w	2*4,2*4,2*4,2*5,2*5,2*6,2*7,2*6,2*5,2*5
+	dc.w	2*4,2*4,2*4,2*3,2*3,2*2,2*3,2*2,2*2,2*2
 	dc.w	-1
 
 hwbounceptr:	dc.l	hwbouncetab
@@ -6274,6 +5944,7 @@ wavetab:
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	wordschief
+	dc.l	byteschief
 	dc.l	byteschief
 	dc.l	_nix
 	dc.l	wordhinher
@@ -6573,8 +6244,12 @@ space	equ	87
 	dc.b	e,e+1,n,n+1,o,o+1,u,u+1,g,g+1,h,h+1,space,f,f+1,o,o+1,r,r+1,space,n,n+1,o,o+1,w,w+1,space,space,space,space
 	dc.b	b,b+1,y,y+1,e,e+1,space,az,az+1
 	dc.b	space
+	dc.b	space
 scrolltext:
 ;	dc.b	zero,zero,zero,zero,zero,zero,zero,zero,0
+	rept	10
+	dc.b	space,space,space
+	endr
 	dc.b	space,space,space,h,h+1,e,e+1,l,l+1,l,l+1,o,o+1,space,space
 	dc.b	t,t+1,h,h+1,i,i+1,s,s+1,space,space,i,i+1,s,s+1,space,space
 	dc.b	g,g+1,u,u+1,n,n+1,s,s+1,t,t+1,i,i+1,c,c+1,k,k+1,space,s,s+1
@@ -6628,13 +6303,15 @@ hwpalette:
 	dc.w $0700,$0707,$0474,$0777,$0606,$0505,$0404,$303
 graphic:
 	dc.w $d555,$3333,$0f0f,$ff
-message:
-	dc.b 0
+cheatcodepos:
+	dc.l	cheatcode
+cheatcode:  ;  B         U         S         cr
+	dc.b 48,48+$80,22,22+$80,31,31+$80,28,28+$80,0
 	even
 lowbyte:
 	dc.b 0
 
-	
+	even	
 hwscrolldat:			
 
 	incbin	"includes\hwscroll.dat"
@@ -6655,6 +6332,7 @@ oldres: ds.w 1
 screenad1:ds.w 1
 screenad2:ds.l 1
 screenadr:ds.l 1
+resync:		ds.w	1
 digswitch:	ds.w	1	;use digi1 or digi2
 logbase:	ds.l	1	;screen where to put scroll
 tabentry:

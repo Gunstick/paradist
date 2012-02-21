@@ -4,11 +4,11 @@ overscan:equ 0
 
 
 test		equ	10
-parallax	equ	10
-parallay	equ	10
 
-bus	equ	10
-
+parallax	equ	0
+parallay	equ	0
+bus		equ	10
+digitest	equ	10
 
 
 	pea	start
@@ -23,13 +23,17 @@ bus	equ	10
 ;	dc.w	138*4
 ;	dc.w	195*4
 ;	dc.w	167*4
-	dc.w	197*4
+;	dc.w	197*4
+;	dc.w	167*4
+	dc.w	255*4
 digisound:
 ;	incbin	"includes\telgraph.dmn"
 ;	incbin	"includes\jasy75.dmn"
 ;	incbin	"includes\senn_l1.dmn"
 ;	incbin	"includes\senn_l2.dmn"
-	incbin	"includes\luna.dmn"
+;	incbin	"includes\luna.dmn"
+;	incbin	"includes\luna2.dmn"
+	incbin	"includes\infinity.dmn"
 digiend:
 	even
 
@@ -44,7 +48,6 @@ noswreset:
 	rts
 start:
 	move	#$2700,sr
-	move.l	#noswreset,$46e.w
 	bsr	waitvbl
 
 	lea	$ffff8240.w,a2
@@ -73,7 +76,7 @@ start:
 	move.l	a2,-(sp)
 	move.l	a2,-(sp)
 	move.w	#5,-(sp)
-	trap	#14
+;	trap	#14
 	lea	12(sp),sp
 
 	move.l	screenad2,d0
@@ -136,7 +139,7 @@ alles:
 	move.b	#8,$fffffc02.w
 
 	bsr.s	waitvbl
-	move.b	#2,$ffff820a.w
+	move.b	#0,$ffff820a.w
 	bsr.s	waitvbl
 	move.b	#2,$ffff820a.w
 	move.b	oldres,$ffff8260.w
@@ -150,7 +153,7 @@ alles:
 	move.l	d0,-(sp)
 	move.l	d0,-(sp)
 	move.w	#5,-(sp)
-	trap	#14
+;	trap	#14
 	lea	12(sp),sp
 
 	bsr.s	psginit
@@ -259,12 +262,16 @@ digi1	MACRO
 ;	bne.s	*+4
 ;	illegal	
 	
+	ifne	digitest
 	moveq	#-1,d6		;~1
 	move.b	(a6),d6		;~2
 	add.w	d6,d6		;~1
 	add.w	(a7,d6),d7	;~4
-;	move.w	#$700,$ffff8240.w
-;	move.w	#$007,$ffff8240.w
+	endc
+	ifeq	digitest
+	move.w	#$700,$ffff8240.w
+	move.w	#$200,$ffff8240.w
+	endc
 	andi.w	#$ff*4,d7	;~2
 	
 	move.l	(a7,d7),d6
@@ -278,12 +285,16 @@ digi2	MACRO
 ;	beq.s	*+4
 ;	illegal
 	
+	ifne	digitest
 	moveq	#-1,d6		;~1
 	move.b	(a6)+,d6	;~2
 	add.w	d6,d6		;~1
 	add.w	2(a7,d6),d7	;~4
-;	move.w	#$070,$ffff8240.w
-;	move.w	#$007,$ffff8240.w
+	endc
+	ifeq	digitest
+	move.w	#$070,$ffff8240.w
+	move.w	#$020,$ffff8240.w
+	endc
 	andi.w	#$ff*4,d7	;~2
 	
 	move.l	(a7,d7),d6	;~5
@@ -505,7 +516,17 @@ opentopwait:
 	dcb	$4e71,90+122-16-blaf
 
 loop:
-	dcb	$4e71,blaf-4-1
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
+	move.l	(a6)+,d1				;~3
+	movep.l	d1,$ffff8800-512-downthere(a7)		;~7
+	endc
+	dcb	$4e71,blaf-4-1-20
 	move.w	d7,digswitch
 	movem.l hwpalette,d2-d7/a1-a2
 	move.l	a1,usp
@@ -514,8 +535,19 @@ loop:
 	movea.l tabentry,a0	;get back tablepos
 ;	move.w	#$007,$ffff8240.w
 
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
+	move.l	(a6)+,d0				;~3
+	movep.l	d0,$ffff8800-512-downthere(a7)		;~7
+	endc
 
-	move.b	#0,$ffff820a.w
+	move.b	#0,$ffff820a.w	
+
 	not.w	$ffff8240.w
 
 	move.b	#0,$fffffa19.w	;stop timer
@@ -573,8 +605,16 @@ mitte:
 	move.b	#0,$ffff8260.w
 cont3:
 	move.b	#asd,$fffffa19.w
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
 	move.l	(a6)+,d1				;~3
 	movep.l	d1,$ffff8800-512-downthere(a7)		;~7
+	endc
 	dcb	$4e71,28-10
 	tst.b	(a0)+
 	bne.s	rechts1
@@ -686,8 +726,16 @@ disthigh	equ	20
 	move.l	disttable+distspeed*2+7*4,disttable+7*4
 	dcb	$4e71,25-5-10
 
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
 	move.l	(a6)+,d6			;~3
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+	endc
 	calc_mdist	
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -713,9 +761,18 @@ distwaveread:
 	dcb	$4e71,25-10-2	;digi
 ;	digi1	
 	move.l	usp,a2			;~1
+
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
 	move.l	(a2)+,d6		;~3
-	move.l	a2,usp			;~1
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+	endc
+	move.l	a2,usp			;~1
 
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
@@ -754,11 +811,19 @@ _notnextwavetab:
 
 	;free: d1-d2/d4-d7/a0-a7/usp
 ;	digi2
-	move.l	usp,a2			;~1
 	dcb	$4e71,24-10-1-1
+	move.l	usp,a2			;~1
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
 	move.l	(a2)+,d6			;~3
-	move.l	a2,usp
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+	endc
+	move.l	a2,usp
 	calc_mdist2
 
 
@@ -1461,11 +1526,9 @@ vorwaerts2:
 	nop
 	nop
 _nottextend2:
-;	clr.b	d_1		;~4 C
 	lsl.w	#3,d_1	;~8
 	nop	
 	calc_mdist
-
 
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -1475,9 +1538,7 @@ nottextend2:			;~12
 	bra	_nottextend2	;~12
 cont22:
 	dcb	$4e71,5-2
-;	clr.b	d_2		;~4 K
 	do_mdist
-
 
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	lsl.w	#3,d_2	;~8
@@ -1514,8 +1575,6 @@ vorbufok2:
 vorbufnok2:
 	dcb	$4e71,5
 	dcb	$4e71,2
-	
-
 call_shifter2:	
 	;write first buffer
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~24
@@ -1753,9 +1812,7 @@ cont52:
 	move.b	-26(a_1),d_2	;~16 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
-;	clr.b	d_1	;~4 E
 	lsl.w	#3,d_1	;~8
-;	clr.b	d_2	;~4 A
 	lsl.w	#3,d_2	;~8
 	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
@@ -2122,20 +2179,7 @@ vorwaerts4:
 	move.w	d_2,(a_0)
 	move.l	textptr-shift(a_0),a_1
 	dcb	$4e71,2
-	dcb	$4e71,25-22
-	digi1
-	calc_mdist
-
-
-	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
-	bra.s	cont24
-nottextend4:			;~12
-	addq.w	#1,a_1		;~8
-	bra	_nottextend4	;~12
-cont24:
-	dcb	$4e71,5-2
-	do_mdist
+	dcb	$4e71,25-17-3-1-1
 
 	moveq	#0,d_1
 	moveq	#0,d_2
@@ -2148,9 +2192,21 @@ cont24:
 	nop
 	nop
 _nottextend4:
-	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	lsl.w	#3,d_1	;~8
-	dcb	$4e71,6-2-2-1
+	nop
+	calc_mdist
+
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	bra.s	cont24
+nottextend4:			;~12
+	addq.w	#1,a_1		;~8
+	bra	_nottextend4	;~12
+cont24:
+	dcb	$4e71,5-2
+	do_mdist
+
+	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	lsl.w	#3,d_2	;~8
 	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
@@ -2165,6 +2221,8 @@ _nottextend4:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
+	dcb	$4e71,23-22-1
+	digi1
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -2185,16 +2243,9 @@ vorbufnok4:
 	dcb	$4e71,2
 call_shifter4:	
 	;write first buffer
+
 	movem.w	d_0/d_1/d_2/d_3,(a_1)	;~24
 	lea	26*8(a_1),a_1	;~8
-	dcb	$4e71,5
-	dcb	$4e71,25-22
-	digi2
-	calc_mdist2
-	move.b	#0,$ffff820a.w	;Open right border
-	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
-	do_mdist2
 
 	swap	d_1	
  	addx.w	d1,d1
@@ -2206,28 +2257,8 @@ call_shifter4:
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
 
-	swap	d_1
- 	addx.w	d1,d1
-	swap	d_1
- 	addx.l	d0,d0
- 	addx.l	d3,d3
- 	addx.l	d2,d2
- 	addx.w	d1,d1
-	movem.w	d_0/d_1/d_2/d_3,(a_1)
-	lea	26*8(a_1),a_1
-
-	swap	d_1
- 	addx.w	d1,d1
-	swap	d_1
- 	addx.l	d0,d0
- 	addx.l	d3,d3
- 	addx.l	d2,d2
- 	addx.w	d1,d1
-	movem.w	d_0/d_1/d_2/d_3,(a_1)
-	lea	26*8(a_1),a_1
-
-
-	dcb	$4e71,25-13
+	dcb	$4e71,5
+	dcb	$4e71,25-18
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -2253,9 +2284,74 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
 
-	dcb	$4e71,25-22
+
+	dcb	$4e71,25-13+18-22
+	digi2
+	calc_mdist2
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8-2
+	do_mdist2
+
+	swap	d_1
+ 	addx.w	d1,d1
+	swap	d_1
+ 	addx.l	d0,d0
+ 	addx.l	d3,d3
+ 	addx.l	d2,d2
+ 	addx.w	d1,d1
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
+	lea	26*8(a_1),a_1
+
+	swap	d_1
+ 	addx.w	d1,d1
+	swap	d_1
+ 	addx.l	d0,d0
+ 	addx.l	d3,d3
+ 	addx.l	d2,d2
+ 	addx.w	d1,d1
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
+	lea	26*8(a_1),a_1
+
+	swap	d_1
+ 	addx.w	d1,d1
+	swap	d_1
+ 	addx.l	d0,d0
+ 	addx.l	d3,d3
+ 	addx.l	d2,d2
+ 	addx.w	d1,d1
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
+	lea	26*8(a_1),a_1
+	dcb	$4e71,8-3
+	dcb	$4e71,25-18
+	calc_mdist2
+	move.b	#0,$ffff820a.w	;Open right border
+	move.b	#2,$ffff820a.w
+	dcb	$4e71,8-2
+	do_mdist2
+
+	swap	d_1
+ 	addx.w	d1,d1
+	swap	d_1
+ 	addx.l	d0,d0
+ 	addx.l	d3,d3
+ 	addx.l	d2,d2
+ 	addx.w	d1,d1
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
+	lea	26*8(a_1),a_1
+
+	swap	d_1
+ 	addx.w	d1,d1
+	swap	d_1
+ 	addx.l	d0,d0
+ 	addx.l	d3,d3
+ 	addx.l	d2,d2
+ 	addx.w	d1,d1
+	movem.w	d_0/d_1/d_2/d_3,(a_1)
+	lea	26*8(a_1),a_1
+
+	dcb	$4e71,25-13+18-22
 	digi1
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
@@ -2292,12 +2388,15 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,25-13
+	dcb	$4e71,8-3
+
+	dcb	$4e71,25-18
 	calc_mdist2
-	move.b	#0,$ffff820a.w
+	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,8-2
 	do_mdist2
+
 	swap	d_1
  	addx.w	d1,d1
 	swap	d_1
@@ -2307,6 +2406,7 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
+
 	swap	d_1
  	addx.w	d1,d1
 	swap	d_1
@@ -2316,14 +2416,15 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	dcb	$4e71,8-3
-	dcb	$4e71,25-22
+
+	dcb	$4e71,25-13+18-22
 	digi2
 	calc_mdist2
-	move.b	#0,$ffff820a.w
+	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,8-2
 	do_mdist2
+
 	swap	d_1
  	addx.w	d1,d1
 	swap	d_1
@@ -2333,6 +2434,7 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
+
 	swap	d_1
  	addx.w	d1,d1
 	swap	d_1
@@ -2342,50 +2444,21 @@ call_shifter4:
  	addx.w	d1,d1
 	movem.w	d_0/d_1/d_2/d_3,(a_1)
 	lea	26*8(a_1),a_1
-	swap	d_1
- 	addx.w	d1,d1
-	swap	d_1
- 	addx.l	d0,d0
- 	addx.l	d3,d3
- 	addx.l	d2,d2
- 	addx.w	d1,d1
-	movem.w	d_0/d_1/d_2/d_3,(a_1)
-	lea	26*8(a_1),a_1
-	dcb	$4e71,25-13
-	calc_mdist2
-	move.b	#0,$ffff820a.w	
-	move.b	#2,$ffff820a.w
-	dcb	$4e71,8-2
-	do_mdist2
-	swap	d_1
- 	addx.w	d1,d1
-	swap	d_1
- 	addx.l	d0,d0
- 	addx.l	d3,d3
- 	addx.l	d2,d2
- 	addx.w	d1,d1
-	movem.w	d_0/d_1/d_2/d_3,(a_1)
-	lea	26*8(a_1),a_1
-	swap	d_1
- 	addx.w	d1,d1
-	swap	d_1
- 	addx.l	d0,d0
- 	addx.l	d3,d3
- 	addx.l	d2,d2
- 	addx.w	d1,d1
-	movem.w	d_0/d_1/d_2/d_3,(a_1)
-	lea	26*8(a_1),a_1
+
 	dcb	$4e71,2
 	bra	indistcalcloop4	;~12   26 nops before right borde
 rueckwaerts4:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
 	dcb	$4e71,2+7
-	dcb	$4e71,25-22	;digi
-	digi1
+	dcb	$4e71,25-18-4	;digi
+	subq.w	#4,bufcnt-shift(a_0)	;~12
+	bhs.s	rueckbufok4		;~8
+	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
+	add.l	#25*8,bufptr-shift(a_0)	;~32
+_rueckbufok4:
+	move.l	textptr-shift(a_0),a_1	;~16
 	calc_mdist
-
-
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	bra.s	cont54
@@ -2397,13 +2470,6 @@ cont54:
 	dcb	$4e71,5-2
 	do_mdist
 
-
-	subq.w	#4,bufcnt-shift(a_0)	;~12
-	bhs.s	rueckbufok4		;~8
-	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
-	add.l	#25*8,bufptr-shift(a_0)	;~32
-_rueckbufok4:
-	move.l	textptr-shift(a_0),a_1	;~16
 	moveq	#0,d_1
 	moveq	#0,d_2
 	move.b	-27(a_1),d_1	;~16 previous letter : E
@@ -2411,12 +2477,14 @@ _rueckbufok4:
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 	lsl.w	#3,d_1	;~8
-	dcb	$4e71,7-2-2
 	lsl.w	#3,d_2	;~8
 	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
+
+	dcb	$4e71,7+18-22
+	digi1
 	calc_mdist02
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -2553,7 +2621,7 @@ endscrollcpy:
 	move.b	#2,$fffffa19.w
 
 
-
+	
 
 
 c0	equr	d0
@@ -2575,17 +2643,22 @@ c10	equr	a1
 	move.w	#7,count
 scrollcpy2:
 	move.w	shift-buffer(a7),d1
-	mulu	#208,d1
+	add.w	d1,d1
+	move.w	_mul208(pc,d1),d1
 	lea	(a7,d1),a2
 	move.w	bufcnt-buffer(a7),d1
-	lea	cpyjsr2,a1
+	lea	cpyjsr2(pc),a1
 	move.l	(a1,d1),a1
 	
-	lea	downthere+512,a7	;voltab (.w ?)
+	lea	downthere+512.w,a7	;voltab (.w)
 	not.w	digswitch
 	bne.s	cpy_d2
 	digi1
    	jmp	(a1)		;(a2)+ -> (a0)   uses d1-a1
+_mul208:
+	dc.w	0,208,208*2,208*3,208*4,208*5,208*6,208*7,208*8
+	dc.w	208*9,208*10,208*11,208*12,208*13,208*14,208*15
+
 cpy_d2:
 	digi2
    	jmp	(a1)		;(a2)+ -> (a0)   uses d1-a1
@@ -2597,7 +2670,7 @@ endcpy2:
 	subq.w	#1,count
 	bne	scrollcpy2
 
-	lea	downthere+512,a7	;voltab (.w ?)
+	lea	downthere+512.w,a7	;voltab (.w ?)
 
 	;**********************************************************
 	;buffercopy
@@ -2897,8 +2970,16 @@ calcpredigi:
 	move.l	(a7,d7),(a0)+
 	move.l	(a7,d7),(a0)+
 	endr
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
 	move.l	(a1)+,d6
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+	endc
 	dbf	d0,calcpredigi
 	;digi2
 	moveq	#-1,d6		;~1
@@ -2908,12 +2989,40 @@ calcpredigi:
 	andi.w	#$ff*4,d7	;~2
 	move.l	(a7,d7),(a0)+
 	move.l	(a7,d7),(a0)+
+
+	;digi1
+	moveq	#-1,d6
+	move.b	(a6),d6
+	add.w	d6,d6
+	add.w	(a7,d6),d7
+	andi.w	#$ff*4,d7
+	move.l	(a7,d7),(a0)+
+	move.l	(a7,d7),(a0)+
+	;digi2
+	moveq	#-1,d6		;~1
+	move.b	(a6)+,d6	;~2
+	add.w	d6,d6		;~1
+	add.w	2(a7,d6),d7	;~4
+	andi.w	#$ff*4,d7	;~2
+	move.l	(a7,d7),(a0)+
+	move.l	(a7,d7),(a0)+
+
+	dcb	$4e71,70
+
 	move.l	a6,digiptr
 ;	endc
 	dcb	$4e71,150
 	move.l	a1,a6
+	ifeq	digitest
+	move.w	#$777,$ffff8240.w
+	move.w	#$333,$ffff8240.w
+	nop
+	nop
+	endc
+	ifne	digitest
 	move.l	(a6)+,d6			;~3
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+	endc
 	
 	move.w	#911,$ffff8240.w
 	move.b	#0,$fffffa0b.w	;clr pending
@@ -5998,25 +6107,8 @@ wavetab:
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
 	dc.l	byteschief
 	dc.l	nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix
-	dc.l	nix,nix,nix,nix,nix,nix,nix,0
 	dc.l	wordhinher
 	dc.l	nix
 	dc.l	nix
@@ -6316,10 +6408,12 @@ space	equ	87
 ;Panic buffer for scrolltext
 	dc.b	01,0,0,0,0,0,0,0,0,01,0,0,01,0,0,01,0,0,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01
 
-	dc.b	space,az,az+1,az,az+1,space,space,space,n,n+1,o,o+1,b,b+1,o,o+1,d,d+1,y,y+1
-	dc.b	space,space,c,c+1,a,a+1,n,n+1,space,space,b,b+1,e,e+1,a,a+1,t,t+1
-	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
-	dc.b	space,space
+	dc.b	r,r+1,e,e+1,s,s+1,p,p+1,e,e+1,c,c+1,t,t+1,a,a+1,b,b+1,l,l+1,e,e+1,s,s+1,space,ka,ka+1,h,h+1,a,a+1,v,v+1,e,e+1,space,i,i+1,space
+	dc.b	g,g+1,o,o+1,t,t+1,space,t,t+1,h,h+1,e,e+1,space,n,n+1,a,a+1,m,m+1,e,e+1,space,r,r+1,i,i+1,g,g+1,h,h+1,t,t+1,fz,fz+1,kz,kz+1,space
+	dc.b	e,e+1,n,n+1,o,o+1,u,u+1,g,g+1,h,h+1,space,f,f+1,o,o+1,r,r+1,space,n,n+1,o,o+1,w,w+1,space,space,space,space
+	dc.b	b,b+1,y,y+1,e,e+1,space,az,az+1
+	
+	dc.b	space,space,space
 scrolltext:
 ;	dc.b	zero,zero,zero,zero,zero,zero,zero,zero,0
 	dc.b	space,space,space,h,h+1,e,e+1,l,l+1,l,l+1,o,o+1,space,space
@@ -6332,6 +6426,27 @@ scrolltext:
 	dc.b	n,n+1,o,o+1,b,b+1,o,o+1,d,d+1,y,y+1
 	dc.b	space,space,c,c+1,a,a+1,n,n+1,space,space,b,b+1,e,e+1,a,a+1,t,t+1
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
+	dc.b	t,t+1,h,h+1,i,i+1,s,s+1,space,s,s+1,c,c+1,r,r+1,e,e+1,e,e+1,n,n+1,space,n,n+1,e,e+1,e,e+1,d,d+1,e,e+1,d,d+1,space
+	dc.b	o,o+1,v,v+1,e,e+1,r,r+1,space,one,one+1,space,m,m+1,o,o+1,n,n+1,t,t+1,h,h+1,space
+	dc.b	f,f+1,u,u+1,l,l+1,l,l+1,t,t+1,i,i+1,m,m+1,e,e+1,space,c,c+1,o,o+1,d,d+1,i,i+1,n,n+1,g,g+1,az,az+1,space
+	dc.b	b,b+1,u,u+1,t,t+1,space,b,b+1,e,e+1,c,c+1,a,a+1,u,u+1,s,s+1,e,e+1,space,o,o+1,f,f+1,space
+	dc.b	t,t+1,h,h+1,e,e+1,space,s,s+1,c,c+1,h,h+1,o,o+1,o,o+1,l,l+1,space,i,i+1,t,t+1,space
+	dc.b	t,t+1,o,o+1,o,o+1,k,k+1,space,m,m+1,e,e+1,space,h,h+1,a,a+1,l,l+1,f,f+1,space
+	dc.b	a,a+1,space,y,y+1,e,e+1,a,a+1,r,r+1,az,az+1,space,i,i+1,space,h,h+1,o,o+1,p,p+1,e,e+1,space
+	dc.b	i,i+1,t,t+1,space,w,w+1,i,i+1,l,l+1,l,l+1,space,b,b+1,e,e+1,space,t,t+1,h,h+1,e,e+1,space
+	dc.b	b,b+1,e,e+1,s,s+1,t,t+1,space,f,f+1,u,u+1,l,l+1,l,l+1,s,s+1,c,c+1,e,e+1,n,n+1,space
+	dc.b	d,d+1,i,i+1,s,s+1,t,t+1,o,o+1,r,r+1,t,t+1,e,e+1,r,r+1,space,e,e+1,v,v+1,e,e+1,r,r+1,space,d,d+1,o,o+1,n,n+1,e,e+1,space,az,az+1,space,space
+	dc.b	g,g+1,r,r+1,e,e+1,e,e+1,t,t+1,i,i+1,n,n+1,g,g+1,s,s+1,space,t,t+1,o,o+1,space,m,m+1,y,y+1,space
+	dc.b	b,b+1,e,e+1,s,s+1,t,t+1,space,f,f+1,r,r+1,i,i+1,e,e+1,n,n+1,d,d+1,s,s+1,dp,dp+1,space
+	dc.b	t,t+1,h,h+1,e,e+1,space,l,l+1,o,o+1,s,s+1,t,t+1,space,b,b+1,o,o+1,y,y+1,s,s+1,space
+	dc.b	ka,ka+1,g,g+1,i,i+1,v,v+1,e,e+1,space,m,m+1,e,e+1,space,a,a+1,l,l+1,l,l+1,space
+	dc.b	y,y+1,o,o+1,u,u+1,r,r+1,space,s,s+1,l,l+1,o,o+1,w,w+1,space,r,r+1,o,o+1,u,u+1,t,t+1,i,i+1,n,n+1,e,e+1,s,s+1,space
+	dc.b	i,i+1,space,w,w+1,i,i+1,l,l+1,l,l+1,space,o,o+1,p,p+1,t,t+1,i,i+1,m,m+1,i,i+1,z,z+1,e,e+1,space,t,t+1,h,h+1,e,e+1,m,m+1,kz,kz+1,space
+	dc.b	r,r+1,e,e+1,s,s+1,p,p+1,e,e+1,c,c+1,t,t+1,a,a+1,b,b+1,l,l+1,e,e+1,s,s+1,space,ka,ka+1,h,h+1,a,a+1,v,v+1,e,e+1,space,i,i+1,space
+	dc.b	g,g+1,o,o+1,t,t+1,space,t,t+1,h,h+1,e,e+1,space,n,n+1,a,a+1,m,m+1,e,e+1,space,r,r+1,i,i+1,g,g+1,h,h+1,t,t+1,fz,fz+1,kz,kz+1,space
+	dc.b	e,e+1,n,n+1,o,o+1,u,u+1,g,g+1,h,h+1,space,f,f+1,o,o+1,r,r+1,space,n,n+1,o,o+1,w,w+1,space,space,space,space
+	dc.b	b,b+1,y,y+1,e,e+1,space,az,az+1
+	
 	dc.b	space,space,space
 	dc.b	0
 	dc.b	87,87
@@ -6409,7 +6524,7 @@ disttable:
 digiptr:
 	ds.l	1	;ptr to begin digi after vbl
 predigi:
-	ds.l	20	;20 lines predigitized (10*2 values)
+	ds.l	40	;40 lines predigitized (20*2 values)
 mactcurv:
 	ds.l	1	;ptr in active curve
 mnextcurv:

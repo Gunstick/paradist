@@ -1088,7 +1088,9 @@ cont2:
 _nottextend:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	clr.b	d_1		;~4 C
+	lsr.w	#1,d_1	;~8
 	clr.b	d_2		;~4 K
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
@@ -1103,7 +1105,7 @@ _nottextend:
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
 
-	dcb	$4e71,6
+	dcb	$4e71,6-2-2
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1362,7 +1364,7 @@ cont5:
 	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok:
 	move.l	textptr-shift(a_0),a_1	;~16
-	dcb	$4e71,7
+	dcb	$4e71,7-2-2
 	;movep : 5 nops weniger
 	;actual = if any bit of the letter appears in one buffer
 	;		             textptr
@@ -1375,7 +1377,9 @@ _rueckbufok:
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 	clr.b	d_1	;~4 E
+	lsr.w	#1,d_1	;~8
 	clr.b	d_2	;~4 A
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~12
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
@@ -1428,13 +1432,15 @@ nottextend2:			;~12
 	addq.w	#1,a_1		;~8
 	bra	_nottextend2	;~12
 cont22:
-	dcb	$4e71,5-2
+	dcb	$4e71,5-2-1-2
+	clr.b	d_1		;~4 C
+	lsr.w	#1,d_1	;~8
 	do_mdist
 
 
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
-	clr.b	d_1		;~4 C
 	clr.b	d_2		;~4 K
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
@@ -1448,7 +1454,7 @@ cont22:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,23-22
+	dcb	$4e71,23-22-1
 	digi2
 	calc_mdist2
 
@@ -1682,12 +1688,13 @@ rueckwaerts2:
 	add.w	#16,d_2			;~8
 	move.w	d_2,(a_0)		;~8 write back new shift
 	dcb	$4e71,2+7
-	dcb	$4e71,25-18	;digi
+	dcb	$4e71,25-18-4	;digi
 	subq.w	#4,bufcnt-shift(a_0)	;~12
 	bhs.s	rueckbufok2		;~8
 	move.w	#25*4,bufcnt-shift(a_0)	;~16 screenwidth = 26 words
 	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok2:
+	move.l	textptr-shift(a_0),a_1	;~16
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -1701,19 +1708,21 @@ cont52:
 	do_mdist
 
 
-	move.l	textptr-shift(a_0),a_1	;~16
+	dcb	$4e71,2
 	movep.w	-27(a_1),d_1	;~16 previous letter : E
 	movep.w	-26(a_1),d_2	;~16 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 	clr.b	d_1	;~4 E
+	lsr.w	#1,d_1	;~8
 	clr.b	d_2	;~4 A
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~12
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
 
-	dcb	$4e71,7+18-22
+	dcb	$4e71,7+18-22-2
 	digi2
 	calc_mdist02
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1764,7 +1773,9 @@ cont23:
 _nottextend3:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	clr.b	d_1		;~4 C
+	lsr.w	#1,d_1	;~8
 	clr.b	d_2		;~4 K
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
@@ -1778,7 +1789,7 @@ _nottextend3:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,6
+	dcb	$4e71,6-2-2
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -2033,13 +2044,15 @@ cont53:
 	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok3:
 	move.l	textptr-shift(a_0),a_1	;~16
-	dcb	$4e71,7
+	dcb	$4e71,7-2-2
 	movep.w	-27(a_1),d_1	;~16 previous letter : E
 	movep.w	-26(a_1),d_2	;~16 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 	clr.b	d_1	;~4 E
+	lsr.w	#1,d_1	;~8
 	clr.b	d_2	;~4 A
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~12
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
@@ -2093,7 +2106,9 @@ cont24:
 _nottextend4:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
 	clr.b	d_1		;~4 C
+	lsr.w	#1,d_1	;~8
 	clr.b	d_2		;~4 K
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
@@ -2107,7 +2122,7 @@ _nottextend4:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,6
+	dcb	$4e71,6-2-2
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -2347,13 +2362,15 @@ cont54:
 	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok4:
 	move.l	textptr-shift(a_0),a_1	;~16
-	dcb	$4e71,7
+	dcb	$4e71,7-2-2
 	movep.w	-27(a_1),d_1	;~16 previous letter : E
 	movep.w	-26(a_1),d_2	;~16 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
 	clr.b	d_1	;~4 E
+	lsr.w	#1,d_1	;~8
 	clr.b	d_2	;~4 A
+	lsr.w	#1,d_2	;~8
 	lea	font+(scrhigh*8),a_1	;~12
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
@@ -2488,6 +2505,7 @@ endscrollcpy:
   move.b #0,$fffffa0b.w
   move.b #2,$fffffa19.w
   endc
+
 c0	equr	d0
 c1	equr	d1
 c2	equr	d2
@@ -5628,7 +5646,7 @@ voltab:
 
 
 mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
-	rept	300/13
+;	rept	300/13
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
 	dc.w	$113,$114,$225,$447,$447,$447,$114,$007
@@ -5698,8 +5716,8 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
 	dc.w	$300,$400,$600,$700,$700,$700,$600,$300
-	endr
-;	rept	300/5
+;	endr
+	rept	300/5
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
@@ -5725,7 +5743,7 @@ mdistgraph	equ	*+2*16	;the scroller graphics buffer -> bss
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 	dc.w	$700,$000,$000,$000,$000,$000,$000,$000
 
-;	endr
+	endr
 
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
 	dc.w	$005,$006,$007,$337,$337,$007,$006,$005
@@ -5893,9 +5911,6 @@ wavetab:
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
 	dc.l	byteschief
 	dc.l	nix
 	dc.l	nix
@@ -5935,7 +5950,6 @@ wavetab:
 	dc.l	0	;end
 
 mwavetab:
-;	dc.l	nix,nix,0
 	dc.l	sinschief
 	dc.l	sinschief
 	dc.l	bigsin
@@ -6204,24 +6218,25 @@ space	equ	87
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
 	dc.b	space,space
 scrolltext:
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	fz,fz+1,space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
+	dc.b	zero,zero,zero,zero,zero,zero,zero,zero,0
 	dc.b	space,space,space,h,h+1,e,e+1,l,l+1,l,l+1,o,o+1,space,space
 	dc.b	t,t+1,h,h+1,i,i+1,s,s+1,space,space,i,i+1,s,s+1,space,space
 	dc.b	g,g+1,u,u+1,n,n+1,s,s+1,t,t+1,i,i+1,c,c+1,k,k+1,space,s,s+1
 	dc.b	space,space,space,r,r+1,e,e+1,v,v+1,o,o+1,l,l+1,u,u+1,t,t+1,i,i+1,o,o+1
 	dc.b	n,n+1,a,a+1,r,r+1,y,y+1,space,space,f,f+1,u,u+1,l,l+1,l,l+1,mi,mi+1
 	dc.b	s,s+1,c,c+1,r,r+1,e,e+1,e,e+1,n,n+1,mi,mi+1,s,s+1,c,c+1,r,r+1,e,e+1,e,e+1,n,n+1
-	dc.b	space,az,az+1,az,az+1,space,space,space
+	dc.b	space,az,az+1,az,az+1,space,space,space,0
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,space,space,space,space,space,space,space
 	dc.b	n,n+1,o,o+1,b,b+1,o,o+1,d,d+1,y,y+1
 	dc.b	space,space,c,c+1,a,a+1,n,n+1,space,space,b,b+1,e,e+1,a,a+1,t,t+1
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
@@ -6344,4 +6359,4 @@ endprg:
 
 
 
- 
+

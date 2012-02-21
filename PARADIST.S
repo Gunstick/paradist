@@ -1,4 +1,3 @@
-backport	equ	10
 overscan:equ 0
 ; Double Megadistorter by Gunstick   (c) ULM 1990
 ; we know! it's long, but it works ! And it's from ULM !!!
@@ -499,7 +498,7 @@ __no_vbl:
 	movem.l d0-d6/a0,$ffff8240.w
 
 ;blaf	equ	174-55
-blaf	equ	174
+blaf	equ	174+4
 	move.w	#1500-30,d0
 opentopwait:
 	dbra	d0,opentopwait
@@ -2541,14 +2540,22 @@ o_endcpy:
 	bne	scrollcpy
 
 endscrollcpy:
-  ifne backport
-  move.b #0,$fffffa19.w
-  move.b #80,$fffffa1f.w
-  move.b #32,$fffffa07.w
-  move.b #0,$fffffa0b.w
-  move.b #2,$fffffa19.w
-  endc
-  
+
+*****************************************
+*	end of the synchron part	*
+*****************************************
+
+
+	move.b	#0,$fffffa19.w	;stop timer
+	move.b	#80,$fffffa1f.w	;244
+	move.b	#32,$fffffa07.w
+	move.b	#0,$fffffa0b.w	;clr pending
+	move.b	#2,$fffffa19.w
+
+
+
+
+
 c0	equr	d0
 c1	equr	d1
 c2	equr	d2
@@ -5991,9 +5998,25 @@ wavetab:
 	dc.l	wordschief
 	dc.l	wordschief
 	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
+	dc.l	wordschief
 	dc.l	byteschief
 	dc.l	nix
-	dc.l	nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix
+	dc.l	nix,nix,nix,nix,nix,nix,nix,0
 	dc.l	wordhinher
 	dc.l	nix
 	dc.l	nix

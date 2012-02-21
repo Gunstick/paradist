@@ -1,9 +1,4 @@
 backport	equ	10
-;********* what to do : 
-;     read predigi in hwscroll and distcalc loops
-
-
-
 overscan:equ 0
 ; Double Megadistorter by Gunstick   (c) ULM 1990
 ; we know! it's long, but it works ! And it's from ULM !!!
@@ -265,11 +260,13 @@ digi1	MACRO
 ;	bne.s	*+4
 ;	illegal	
 	
-	moveq	#-1,d6
-	move.b	(a6),d6
-	add.w	d6,d6
-	add.w	(a7,d6),d7
-	andi.w	#$ff*4,d7
+	moveq	#-1,d6		;~1
+	move.b	(a6),d6		;~2
+	add.w	d6,d6		;~1
+	add.w	(a7,d6),d7	;~4
+;	move.w	#$700,$ffff8240.w
+;	move.w	#$007,$ffff8240.w
+	andi.w	#$ff*4,d7	;~2
 	
 	move.l	(a7,d7),d6
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
@@ -286,6 +283,8 @@ digi2	MACRO
 	move.b	(a6)+,d6	;~2
 	add.w	d6,d6		;~1
 	add.w	2(a7,d6),d7	;~4
+;	move.w	#$070,$ffff8240.w
+;	move.w	#$007,$ffff8240.w
 	andi.w	#$ff*4,d7	;~2
 	
 	move.l	(a7,d7),d6	;~5
@@ -296,7 +295,7 @@ digi2	MACRO
 
 screen2:
 
-;free d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 a3 a4 a5 a7    usp
+;free d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 -- -- -- a7    usp
 	move	sr,-(sp)
 	move	#$2700,sr
 	move.l	sp,stack
@@ -322,7 +321,7 @@ prepdigi:
 	lea	downthere+512,a7
 	lea	digisound-2,a6
 	move.w	(a6)+,d7
-		
+	move.l	a6,digiptr		
 
 	;**********************************************************
 	;	Distorted scroller by Gunstick
@@ -349,16 +348,16 @@ initdist:
 	move.l	#scrnadrs,nextscrn
 	move.l	#screen-230*20,cpybufdest
 
-	bra	kaka
+;	bra	kaka
 
 
 lupo:
 	move.w	#74,d0
 ll2:
 	digi1
-	dcb	$4e71,256
+	dcb	$4e71,512/2-22
 	digi2
-	dcb	$4e71,256
+	dcb	$4e71,512/2-22-3
 	dbf	d0,ll2
 
 
@@ -371,7 +370,8 @@ ll2:
 _digiok:
 	btst	#0,$fffffc00.w
 	beq	lupo
-	bra	exit
+	move.l	a6,digiptr
+	bra	kaka
 
 
 
@@ -479,7 +479,7 @@ firsttopwait:
 	move.l	a0,tabentry-screenadr(a2)	;~16 save tablepos
 ;ULM Hardware Scrolling END OF PART 1
 
-	
+	lea	predigi,a6
 	lea	mdistgraph,a5
 	lea	mdistadjust,a4
 	move.l	mdistcurvptr,a3
@@ -506,7 +506,7 @@ opentopwait:
 	dcb	$4e71,90+122-16-blaf
 
 loop:
-	dcb	$4e71,blaf-4
+	dcb	$4e71,blaf-4-1
 	move.w	d7,digswitch
 	movem.l hwpalette,d2-d7/a1-a2
 	move.l	a1,usp
@@ -574,7 +574,9 @@ mitte:
 	move.b	#0,$ffff8260.w
 cont3:
 	move.b	#asd,$fffffa19.w
-	dcb	$4e71,28
+	move.l	(a6)+,d1				;~3
+	movep.l	d1,$ffff8800-512-downthere(a7)		;~7
+	dcb	$4e71,28-10
 	tst.b	(a0)+
 	bne.s	rechts1
 	tst.b	(a0)+
@@ -611,7 +613,7 @@ cont4:
 	;INITIALISATIONS
 	;***** Calc next screenadress ****
 
-	;free: d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 a3 a4 a5 a7    usp
+	;free: d0 d1 d2 d3 d4 d5 d6 d7 a0 a1 a2 -- -- -- -- a7    usp
 	lea	nextscrn,a2	;~12
 	move.l	(a2),a0		;~20
 	move.l	(a0)+,d0		;~12
@@ -646,7 +648,7 @@ _hwbounceok:
 	;free: d0-a7/usp
 
 
-	dcb	$4e71,2
+	addq.l	#4,a6	;no digi this line
 	calc_mdist
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -674,7 +676,6 @@ d_3	equr	d3
 a_0	equr	a0
 a_1	equr	a1
 a_2	equr	a2
-a_3	equr	a3
 
 distspeed 	equ	5
 disthigh	equ	20
@@ -684,16 +685,21 @@ disthigh	equ	20
 	
 
 	move.l	disttable+distspeed*2+7*4,disttable+7*4
-	dcb	$4e71,25-5
+	dcb	$4e71,25-5-10
 
-	calc_mdist
+	move.l	(a6)+,d6			;~3
+	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+	calc_mdist	
+
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
 	dcb	$4e71,6
 	do_mdist
 	move.w	digswitch,d7
 ;	digi2
-	dcb	$4e71,27-4
+	move.l	a6,usp			;~1
+	move.l	digiptr,a6
+	dcb	$4e71,27-4-5-1
 
 	lea	disttable+disthigh*2-distspeed*2,a_1	;position to write new
 	move.l	distwaveptr,a_0		;position in the actual wave
@@ -703,10 +709,15 @@ disthigh	equ	20
 
 
 distwaveread:
-	;free: d4-d7/a2/a4-a7/usp
+	;free: d4-d5/usp
 
-	dcb	$4e71,25	;digi
-;	digi1
+	dcb	$4e71,25-10-2	;digi
+;	digi1	
+	move.l	usp,a2			;~1
+	move.l	(a2)+,d6		;~3
+	move.l	a2,usp			;~1
+	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
+
 	calc_mdist2
 	move.b	#0,$ffff820a.w	;Open right border
 	move.b	#2,$ffff820a.w
@@ -744,7 +755,11 @@ _notnextwavetab:
 
 	;free: d1-d2/d4-d7/a0-a7/usp
 ;	digi2
-	dcb	$4e71,24
+	move.l	usp,a2			;~1
+	dcb	$4e71,24-10-1-1
+	move.l	(a2)+,d6			;~3
+	move.l	a2,usp
+	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
 	calc_mdist2
 
 
@@ -778,8 +793,8 @@ distcalcloop:	;(~12)
 noshift:
 	dcb	$4e71,6-2-3
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	digi1
 	lea	back1(pc),a1	;2
+	digi1
 	jmp	do_all		;3
 do_all:
 	calc_mdist
@@ -797,9 +812,9 @@ do_all:
 	jmp	(a1)		;2
 back1:
 	dcb	$4e71,41-2-2-3
-	digi2
 	dcb	$4e71,25-22	;digi
 	lea	back2(pc),a1	;2
+	digi2
 	jmp	do_all		;3
 back2:
 	dcb	$4e71,41-4-2-2
@@ -849,20 +864,20 @@ noshift2:
 	do_mdist
 	dcb	$4e71,41-2-3
 	dcb	$4e71,25-22	;digi
-	digi2
 	lea	back12(pc),a1	;2
+	digi2
 	jmp	do_all		;3
 back12:
 	dcb	$4e71,41-2-2-3
-	digi1
 	dcb	$4e71,25-22	;digi
 	lea	back22(pc),a1	;2
+	digi1
 	jmp	do_all		;3
 back22:
 	dcb	$4e71,41-2-2-3
 	dcb	$4e71,25-22	;digi
-	digi2
 	lea	back32(pc),a1	;2
+	digi2
 	jmp	do_all		;3
 back32:
 	dcb	$4e71,41-2
@@ -911,14 +926,14 @@ distcalcloop3:	;(~12)
 noshift3:
 	dcb	$4e71,6-2-3
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
-	digi2
 	lea	back13(pc),a1	;2
+	digi2
 	jmp	do_all		;3
 back13:
 	dcb	$4e71,41-2-2-3
-	digi1
 	dcb	$4e71,25-22	;digi
 	lea	back23(pc),a1	;2
+	digi1
 	jmp	do_all		;3
 back23:
 	dcb	$4e71,41-4-2-2
@@ -970,20 +985,20 @@ noshift4:
 	do_mdist
 	dcb	$4e71,41-2-3
 	dcb	$4e71,25-22	;digi
-	digi1
 	lea	back14(pc),a1	;2
+	digi1
 	jmp	do_all		;3
 back14:
 	dcb	$4e71,41-2-2-3
-	digi2
 	dcb	$4e71,25-22	;digi
 	lea	back24(pc),a1	;2
+	digi2
 	jmp	do_all		;3
 back24:
 	dcb	$4e71,41-2-2-3
 	dcb	$4e71,25-22	;digi
-	digi1
 	lea	back34(pc),a1	;2
+	digi1
 	jmp	do_all		;3
 back34:
 	dcb	$4e71,41-2
@@ -2533,7 +2548,7 @@ endscrollcpy:
   move.b #0,$fffffa0b.w
   move.b #2,$fffffa19.w
   endc
-
+  
 c0	equr	d0
 c1	equr	d1
 c2	equr	d2
@@ -2886,13 +2901,13 @@ calcpredigi:
 	andi.w	#$ff*4,d7	;~2
 	move.l	(a7,d7),(a0)+
 	move.l	(a7,d7),(a0)+
-
+	move.l	a6,digiptr
 ;	endc
 	dcb	$4e71,150
-
-	move.l	(a1)+,d6
+	move.l	a1,a6
+	move.l	(a6)+,d6			;~3
 	movep.l	d6,$ffff8800-512-downthere(a7)		;~7
-
+	
 	move.w	#911,$ffff8240.w
 	move.b	#0,$fffffa0b.w	;clr pending
 no_int:
@@ -6368,6 +6383,8 @@ disttableptr:
 	ds.l	1	;pointer to scrolldisttable
 disttable:
 	ds.w	20*2	;scrolldisttable
+digiptr:
+	ds.l	1	;ptr to begin digi after vbl
 predigi:
 	ds.l	20	;20 lines predigitized (10*2 values)
 mactcurv:

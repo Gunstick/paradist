@@ -1,9 +1,7 @@
-backport	equ	10
 overscan:equ 0
 ; Double Megadistorter by Gunstick   (c) ULM 1990
 ; we know! it's long, but it works ! And it's from ULM !!!
 
-;make : distcalcloop4 and vor+rueck 2,3 + 4
 
 
 parallax	equ	10
@@ -26,6 +24,12 @@ digisound:
 	incbin	"includes\telgraph.dmn"
 digiend:
 	even
+
+font:
+	incbin	"includes\font.bin"
+	even
+fontend:
+
 kotz:
 	dc.l	0
 noswreset:
@@ -190,11 +194,11 @@ do_mdist	MACRO
 	lea	64(a5),a5
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d3/d4/d5,$ffff8240.w	;mdist
+	movem.l	d3/d4/d5,$ffff8250.w	;mdist
 ;	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
-	move.l	d6,$ffff824c.w	;mdist
+	move.l	d6,$ffff825c.w	;mdist
 ;	dcb	$4e71,4
 	ENDM
 	
@@ -208,11 +212,11 @@ do_mdist2	MACRO
 	lea	64(a5),a5
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d4/d5/d6,$ffff8240.w	;mdist
+	movem.l	d4/d5/d6,$ffff8250.w	;mdist
 ;	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
-	move.l	a2,$ffff824c.w	;mdist
+	move.l	a2,$ffff825c.w	;mdist
 ;	dcb	$4e71,4
 	ENDM
 
@@ -226,11 +230,11 @@ do_mdist02	MACRO
 	lea	64(a5),a5
 	move.b	#1,$ffff8260.w	;GunsticK's right border end switch
 	move.b	#0,$ffff8260.w
-	movem.l	d2/d4/d5,$ffff8240.w	;mdist
+	movem.l	d2/d4/d5,$ffff8250.w	;mdist
 ;	dcb	$4e71,9
  	move.b	#2,$ffff8260.w	;Open left border
 	move.b	#0,$ffff8260.w
-	move.l	d6,$ffff824c.w	;mdist
+	move.l	d6,$ffff825c.w	;mdist
 ;	dcb	$4e71,4
 	ENDM
 
@@ -481,7 +485,7 @@ __no_vbl:
 	movem.l d0-d6/a0,$ffff8240.w
 
 ;blaf	equ	174-55
-blaf	equ	174
+blaf	equ	174-55
 	move.w	#1500-30,d0
 opentopwait:
 	dbra	d0,opentopwait
@@ -737,10 +741,11 @@ _notnextwavetab:
 	
 	move.w	d_3,distcalc	;~16
 scrhigh	equ	20
+fontpartlen	equ	(fontend-font)/scrhigh
 	lea	disttable+0,a_2 ;~12 scroll begins 18 lines before end of screen
 	lea	shift,a_0	;~12 pointer to the shifts
-	move.w	#-(scrhigh*8),count	;~20 scroll has 18 lines
-
+	move.w	#-(scrhigh*fontpartlen),count	;~20 -14400
+	
 distcalcloop:	;(~12)
 
 	;free: d0/d3-d7/a1-a2/a4-a7/usp  cpy:d0/d3/a1/a2
@@ -797,11 +802,11 @@ indistcalcloop:
 	dcb	$4e71,8-2
 	do_mdist
 	
-	dcb	$4e71,4
+	dcb	$4e71,3
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
-	addq.w	#8,count	;~4
+	add.w	#fontpartlen,count	;~4
 	bne	distcalcloop2	;~12
 	bra	enddistcalc
 
@@ -865,11 +870,11 @@ indistcalcloop2:
 	dcb	$4e71,8-2
 	do_mdist
 	
-	dcb	$4e71,4
+	dcb	$4e71,3
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
-	addq.w	#8,count	;~4
+	add.w	#fontpartlen,count	;~4
 	bne	distcalcloop3	;~12
 	bra	enddistcalc
 
@@ -916,11 +921,11 @@ indistcalcloop3:
 	dcb	$4e71,8-2
 	do_mdist
 	
-	dcb	$4e71,4
+	dcb	$4e71,3
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
-	addq.w	#8,count	;~4
+	add.w	#fontpartlen,count	;~4
 	bne	distcalcloop4	;~12
 	bra	enddistcalc
 	
@@ -986,11 +991,11 @@ indistcalcloop4:
 	dcb	$4e71,8-2
 	do_mdist
 	
-	dcb	$4e71,4
+	dcb	$4e71,3
 	move.l	usp,a_2
 
 	lea	linebuffend-linebuffbegin(a_0),a_0	;~8 next line
-	addq.w	#8,count	;~4
+	add.w	#fontpartlen,count	;~4
 	bne	distcalcloop	;~12
 	bra	enddistcalc
 	
@@ -1052,7 +1057,6 @@ enddistcalc:
 
 
 	;=-| read the new distortions and shift the buffers
-	; letters of font must be 256 bytes !!!!!!!!
 	;-> advance this line by one word
 vorwaerts:
 	move.w	d_2,(a_0)	;~8 write back new shift
@@ -1077,9 +1081,12 @@ cont2:
 	;		|
 	;UNLIMITED MATRICKS	a bit of C appears somewhere
 	;now we have to write a bit of K and C
-	movep.w	0(a_1),d_1	;~16 previous letter : C
-	movep.w	1(a_1),d_2	;~16 act letter	 : K
-	tst.b	d_1		;~4  test letter after act : S
+	nop
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	(a_1),d_1	;~8 previous letter : C 
+	move.b	1(a_1),d_2	;~12 act letter	 : K
+	tst.b	2(a_1)		;~12 test letter after act : S
 	bne.s	nottextend	;~8
 	lea	scrolltext,a_1	;~12
 	nop
@@ -1087,11 +1094,12 @@ cont2:
 	nop
 _nottextend:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
-	clr.b	d_1		;~4 C
-	lsr.w	#1,d_1	;~8
-	clr.b	d_2		;~4 K
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~8
+;	clr.b	d_1		;~4 C
+	dcb	$4e71,6-2-2-2
+	lsl.w	#3,d_1	;~8
+;	clr.b	d_2		;~4 K
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
 	movem.l	(a_1,d_2),d_1/d_3	;~36 K
@@ -1105,7 +1113,6 @@ _nottextend:
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
 
-	dcb	$4e71,6-2-2
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1364,7 +1371,6 @@ cont5:
 	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok:
 	move.l	textptr-shift(a_0),a_1	;~16
-	dcb	$4e71,7-2-2
 	;movep : 5 nops weniger
 	;actual = if any bit of the letter appears in one buffer
 	;		             textptr
@@ -1372,15 +1378,18 @@ _rueckbufok:
 	;YEAH THIS IS UNLIMITED MATRICKS	a bit of C appears somewhere
 	;a bit of A appears somewhere
 	;now we have to write a bit of E and A 
-	movep.w	-27(a_1),d_1	;~16 previous letter : E
-	movep.w	-26(a_1),d_2	;~16 act letter	 : A
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	-27(a_1),d_1	;~12 previous letter : E 
+	move.b	-26(a_1),d_2	;~12 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
-	clr.b	d_1	;~4 E
-	lsr.w	#1,d_1	;~8
-	clr.b	d_2	;~4 A
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~12
+;	clr.b	d_1	;~4 E
+	lsl.w	#3,d_1	;~8
+	dcb	$4e71,7-2-2-2+2
+;	clr.b	d_2	;~4 A
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
@@ -1410,18 +1419,22 @@ vorwaerts2:
 	move.w	d_2,(a_0)
 	move.l	textptr-shift(a_0),a_1
 	dcb	$4e71,2
-	dcb	$4e71,25-17
+	dcb	$4e71,25-17-3-1-1
 
-	movep.w	0(a_1),d_1	;~16 previous letter : C
-	movep.w	1(a_1),d_2	;~16 act letter	 : K
-	tst.b	d_1		;~4  test letter after act : S
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	(a_1),d_1	;~16 previous letter : C
+	move.b	1(a_1),d_2	;~16 act letter	 : K
+	tst.b	2(a_1)		;~4  test letter after act : S
 	bne.s	nottextend2	;~8
 	lea	scrolltext,a_1	;~12
 	nop
 	nop
 	nop
 _nottextend2:
-
+;	clr.b	d_1		;~4 C
+	lsl.w	#3,d_1	;~8
+	nop	
 	calc_mdist
 
 
@@ -1432,16 +1445,14 @@ nottextend2:			;~12
 	addq.w	#1,a_1		;~8
 	bra	_nottextend2	;~12
 cont22:
-	dcb	$4e71,5-2-1-2
-	clr.b	d_1		;~4 C
-	lsr.w	#1,d_1	;~8
+	dcb	$4e71,5-2
+;	clr.b	d_2		;~4 K
 	do_mdist
 
 
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
-	clr.b	d_2		;~4 K
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~8
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
 	movem.l	(a_1,d_2),d_1/d_3	;~36 K
@@ -1707,22 +1718,22 @@ cont52:
 	dcb	$4e71,5-2
 	do_mdist
 
-
-	dcb	$4e71,2
-	movep.w	-27(a_1),d_1	;~16 previous letter : E
-	movep.w	-26(a_1),d_2	;~16 act letter	 : A
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	-27(a_1),d_1	;~16 previous letter : E
+	move.b	-26(a_1),d_2	;~16 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
-	clr.b	d_1	;~4 E
-	lsr.w	#1,d_1	;~8
-	clr.b	d_2	;~4 A
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~12
+;	clr.b	d_1	;~4 E
+	lsl.w	#3,d_1	;~8
+;	clr.b	d_2	;~4 A
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
 
-	dcb	$4e71,7+18-22-2
+	dcb	$4e71,7+18-22
 	digi2
 	calc_mdist02
 	move.b	#0,$ffff820a.w	;Open right border
@@ -1762,9 +1773,11 @@ cont23:
 	dcb	$4e71,5-2
 	do_mdist
 
-	movep.w	0(a_1),d_1	;~16 previous letter : C
-	movep.w	1(a_1),d_2	;~16 act letter	 : K
-	tst.b	d_1		;~4  test letter after act : S
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	(a_1),d_1	;~16 previous letter : C
+	move.b	1(a_1),d_2	;~16 act letter	 : K
+	tst.b	2(a_1)		;~4  test letter after act : S
 	bne.s	nottextend3	;~8
 	lea	scrolltext,a_1	;~12
 	nop
@@ -1772,11 +1785,12 @@ cont23:
 	nop
 _nottextend3:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
-	clr.b	d_1		;~4 C
-	lsr.w	#1,d_1	;~8
-	clr.b	d_2		;~4 K
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~8
+;	clr.b	d_1		;~4 C
+	lsl.w	#3,d_1	;~8
+;	clr.b	d_2		;~4 K
+	dcb	$4e71,6-2-2-1
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
 	movem.l	(a_1,d_2),d_1/d_3	;~36 K
@@ -1789,7 +1803,6 @@ _nottextend3:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,6-2-2
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -2044,16 +2057,16 @@ cont53:
 	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok3:
 	move.l	textptr-shift(a_0),a_1	;~16
-	dcb	$4e71,7-2-2
-	movep.w	-27(a_1),d_1	;~16 previous letter : E
-	movep.w	-26(a_1),d_2	;~16 act letter	 : A
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	-27(a_1),d_1	;~16 previous letter : E
+	move.b	-26(a_1),d_2	;~16 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
-	clr.b	d_1	;~4 E
-	lsr.w	#1,d_1	;~8
-	clr.b	d_2	;~4 A
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~12
+	lsl.w	#3,d_1	;~8
+	dcb	$4e71,7-2-2
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
@@ -2095,9 +2108,11 @@ cont24:
 	dcb	$4e71,5-2
 	do_mdist
 
-	movep.w	0(a_1),d_1	;~16 previous letter : C
-	movep.w	1(a_1),d_2	;~16 act letter	 : K
-	tst.b	d_1		;~4  test letter after act : S
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	(a_1),d_1	;~16 previous letter : C
+	move.b	1(a_1),d_2	;~16 act letter	 : K
+	tst.b	2(a_1)		;~4  test letter after act : S
 	bne.s	nottextend4	;~8
 	lea	scrolltext,a_1	;~12
 	nop
@@ -2105,11 +2120,10 @@ cont24:
 	nop
 _nottextend4:
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to K
-	clr.b	d_1		;~4 C
-	lsr.w	#1,d_1	;~8
-	clr.b	d_2		;~4 K
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~8
+	lsl.w	#3,d_1	;~8
+	dcb	$4e71,6-2-2-1
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 C
 	movem.l	(a_1,d_2),d_1/d_3	;~36 K
@@ -2122,7 +2136,6 @@ _nottextend4:
 	move.w	(a_2)+,d_1	;~8
 	move.w	(a_2)+,d_2	;~8
 	move.w	(a_2)+,d_3	;~8
-	dcb	$4e71,6-2-2
 	calc_mdist2
 
 	move.b	#0,$ffff820a.w	;Open right border
@@ -2362,16 +2375,16 @@ cont54:
 	add.l	#25*8,bufptr-shift(a_0)	;~32
 _rueckbufok4:
 	move.l	textptr-shift(a_0),a_1	;~16
-	dcb	$4e71,7-2-2
-	movep.w	-27(a_1),d_1	;~16 previous letter : E
-	movep.w	-26(a_1),d_2	;~16 act letter	 : A
+	moveq	#0,d_1
+	moveq	#0,d_2
+	move.b	-27(a_1),d_1	;~16 previous letter : E
+	move.b	-26(a_1),d_2	;~16 act letter	 : A
 	lea	-1(a_1),a_1	;~8
 	move.l	a_1,textptr-shift(a_0)	;~16 textptr points to I
-	clr.b	d_1	;~4 E
-	lsr.w	#1,d_1	;~8
-	clr.b	d_2	;~4 A
-	lsr.w	#1,d_2	;~8
-	lea	font+(scrhigh*8),a_1	;~12
+	lsl.w	#3,d_1	;~8
+	dcb	$4e71,7-2-2
+	lsl.w	#3,d_2	;~8
+	lea	font-8+(scrhigh*fontpartlen),a_1	;~8
 	add.w	count,a_1	;~20
 	lea	(a_1,d_1),a_2	;~12 E
 	movem.l	(a_1,d_2),d_1/d_3	;~36 A
@@ -2498,14 +2511,6 @@ o_endcpy:
 	bne	scrollcpy
 
 endscrollcpy:
-  ifne backport
-  move.b #0,$fffffa19.w
-  move.b #80,$fffffa1f.w
-  move.b #32,$fffffa07.w
-  move.b #0,$fffffa0b.w
-  move.b #2,$fffffa19.w
-  endc
-
 c0	equr	d0
 c1	equr	d1
 c2	equr	d2
@@ -2810,7 +2815,7 @@ mbounceok:
 
 	lea	15*2(a4),a4
 	calc_mdist
-	movem.l	d3/d4/d5/d6,hwpalette
+	movem.l	d3/d4/d5/d6,hwpalette+16
 	lea	64(a5),a5
 
 
@@ -5903,9 +5908,6 @@ openlowtab:
 	dc.b	2,2,2,2,2,2
 
 	even
-font	equ	*-32*8
-	incbin	"includes\font.bin"
-	even
 wavetab:
 ;	dc.l	byteschief,0
 	dc.l	wordschief
@@ -6218,25 +6220,14 @@ space	equ	87
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
 	dc.b	space,space
 scrolltext:
-	dc.b	zero,zero,zero,zero,zero,zero,zero,zero,0
+;	dc.b	zero,zero,zero,zero,zero,zero,zero,zero,0
 	dc.b	space,space,space,h,h+1,e,e+1,l,l+1,l,l+1,o,o+1,space,space
 	dc.b	t,t+1,h,h+1,i,i+1,s,s+1,space,space,i,i+1,s,s+1,space,space
 	dc.b	g,g+1,u,u+1,n,n+1,s,s+1,t,t+1,i,i+1,c,c+1,k,k+1,space,s,s+1
 	dc.b	space,space,space,r,r+1,e,e+1,v,v+1,o,o+1,l,l+1,u,u+1,t,t+1,i,i+1,o,o+1
 	dc.b	n,n+1,a,a+1,r,r+1,y,y+1,space,space,f,f+1,u,u+1,l,l+1,l,l+1,mi,mi+1
 	dc.b	s,s+1,c,c+1,r,r+1,e,e+1,e,e+1,n,n+1,mi,mi+1,s,s+1,c,c+1,r,r+1,e,e+1,e,e+1,n,n+1
-	dc.b	space,az,az+1,az,az+1,space,space,space,0
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
-	dc.b	space,space,space,space,space,space,space,space
+	dc.b	space,az,az+1,az,az+1,space,space,space
 	dc.b	n,n+1,o,o+1,b,b+1,o,o+1,d,d+1,y,y+1
 	dc.b	space,space,c,c+1,a,a+1,n,n+1,space,space,b,b+1,e,e+1,a,a+1,t,t+1
 	dc.b	space,space,u,u+1,space,l,l+1,space,m,m+1,space,az,az+1,az,az+1,az,az+1
@@ -6266,8 +6257,8 @@ psginittab:dc.b 0,$ff,1,$ff,2,$ff,3,$ff,4,$ff,5,$ff,6,0
 	dc.b 7,$7f,8,7,9,7,10,7,$ff,0
 	even
 hwpalette:
-	dc.w $0700,$0707,$0474,$0777,$0606,$0505,$0404,$303
 	dc.w $777,$666,$555,$444,$333,$222,$111,$002 
+	dc.w $0700,$0707,$0474,$0777,$0606,$0505,$0404,$303
 graphic:
 	dc.w $d555,$3333,$0f0f,$ff
 message:

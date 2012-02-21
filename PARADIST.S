@@ -585,7 +585,8 @@ prepdigi:
 	move.w	(a6)+,d7
 	move.l	a6,digiptr		
 
-
+	move.l	$42a.w,my_reset+2
+	move.l	#my_reset,$42a.w
 
 	ifeq	test
 lupo:
@@ -2152,9 +2153,6 @@ notreset:
 
 	move.b	$fffffc02.w,d0
 
-	move.b	#5,$ffff8800.w
-	move.b	d0,$ffff8802.w
-	move.l	#$0d000200,$ffff8800.w
 	move.l	cheatcodepos,a0
 	cmp.b	(a0)+,d0
 	beq.s	cheatok
@@ -2215,7 +2213,9 @@ cheatcodmod:	equ	*+2
 no_esc:
 	cmpi.b	#57,d0
 	bne.s	no_key
-
+	bra.s	myexit
+my_reset:
+	move.l	#0,resetexit
 myexit:
 	;restore digisound
 	move.w	#(256+512/4)-1,d0
@@ -2225,7 +2225,7 @@ restdigi:
 	move.l	(a0)+,(a1)+
 	dbf	d0,restdigi
 
-
+resetexit:	equ	*+2
 	jmp	exit
 
 no_key:
@@ -2433,7 +2433,12 @@ calcpredigi:
 	move.l	(a7,d7),(a0)+
 	move.l	(a7,d7),(a0)+
 
-	dcb	70,$4e71
+	dcb	70-20,$4e71
+	tst.w	$1f0.w
+	bmi.s	noend
+	subq.w	#1,$1f0.w
+	beq	myexit
+noend:
 
 	move.l	a6,digiptr
 
@@ -5118,11 +5123,13 @@ wavetab:
 	dc.l	wordhinher
 	dc.l	_nix
 	dc.l	_nix
-	dc.l	hacker,hacker,hacker
+	dc.l	fast
+	dc.l	fast
+	dc.l	fast
+	dc.l	fast
 	dc.l	dreieck
 	dc.l	dreieck
 	dc.l	slowdist,slowdist,slowdist,slowdist
-	dc.l	hacker,hacker,hacker
 	dc.l	sinus
 	dc.l	sinus
 	dc.l	sinschief
@@ -5133,21 +5140,6 @@ wavetab:
 	dc.l	sinschief
 	dc.l	sinus
 	dc.l	sinus
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	bytezurueck
-	dc.l	wordschief
-	dc.l	wordschief
-	dc.l	wordschief
 	dc.l	0	;end
 
 mwavetab:
@@ -5161,43 +5153,10 @@ mwavetab:
 	dc.l	slowdist
 	dc.l	slowdist
 	dc.l	slowdist
-	dc.l	wordschief
 	dc.l	0	;end
 
 boink:
 	incbin	includes\boink.bin
-	dc.w	128
-hacker:
-	dc.w	2-1,-2,2,-2,2,-2,2,-2-1
-	dc.w	4,-4,4,-4,4,-4,4,-4-1
-	dc.w	6,-6,6,-6,6,-6,6,-6-1
-	dc.w	8,-8,8,-8,8,-8,8,-8-3
-	dc.w	12,-12,12,-12,12,-12,12,-12-1
-	dc.w	14,-14,14,-14,14,-14,14,-14-1
-	dc.w	16,-16,16,-16,16,-16,16,-16
-	dc.w	16,-16,16,-16,16,-16,16,-16+1
-	dc.w	14,-14,14,-14,14,-14,14,-14+1
-	dc.w	12,-12,12,-12,12,-12,12,-12+3
-	dc.w	8,-8,8,-8,8,-8,8,-8+1
-	dc.w	6,-6,6,-6,6,-6,6,-6+1
-	dc.w	4,-4,4,-4,4,-4,4,-4+1
-	dc.w	2,-2,2,-2,2,-2,2,-2+1
-	dc.w	128
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0,16
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0,-16
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0,16
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0
-	dc.w	0,0,0,0,0,0,0,0,0,0,-16
 	dc.w	128
 slowdist:
 	dc.w	0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1
@@ -5246,23 +5205,23 @@ bytezurueck:
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 	dc.w	128
+fast:
+	incbin	includes\fast.bin
+	dc.w	128
 sinschief:
 	incbin	includes\sisi.bin
 	dc.w	128
 wordhinher:
 	dc.w	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 	dc.w	-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,128
-wordschief:
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,2
-	dc.w	2,2,2,2,2,2,2,128
 
+wordschief:
+	dc.w	2,2,2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,2,2,2
+	dc.w	2,2,2,2,2,2,2,2,2,2,128
 wordzurueck:
 	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
 	dc.w	-2,-2,-2,-2,-2,-2,-2,-2
@@ -5385,15 +5344,9 @@ scrolltextend:
 
 	;**********************************************************
 
-prt:
-	dc.b 27,"Y",32+20,32+1,"     000"
-str:	dc.b "0    ",0
-
-
-
 	even
 psginittab:dc.b 0,$ff,1,$ff,2,$ff,3,$ff,4,$ff,5,$ff,6,0
-	dc.b 7,%11111011,8,0,9,0,10,16,11,5,12,100,13,2,$ff,0
+	dc.b 7,%11111011,8,0,9,0,10,0,11,5,12,100,13,2,$ff,0
 	even
 hwpalette:
 	dc.w	$000,$227,$005,$654,$543,$432,$321,$777
@@ -5413,7 +5366,7 @@ lowbyte:
 	even	
 hwscrolldat:			
 
-	incbin	"includes\hwscroll.dat"
+	incbin	"includes\hwdat.bin"
 	even
 
 	section	bss
